@@ -1,0 +1,76 @@
+wandb_config:
+    WandB: true      # Whether to run this is WandB platform.
+    project_name: 'TABSA Sentiment Classification non-concat LSTM patience'
+    entity: 'sagun-shakya'
+    run_name: "nepsa_non_concat"
+    
+# DATA
+data_file: ./data/raw
+data_path: ./data/kfold
+shuffle: True
+model: lstm
+train_type: 2
+kfold: 5
+root_path: ./data/kfold
+device: cpu
+verbose: true
+data_filename: ss_ac_at_txt_unbal
+cache_dir: ./cache_dir 
+
+# EMBEDDINGS
+pretrained: True
+emb_dir: ./embeddings
+emb_file: model_fasttext_300d__NNC.bin
+embedding_dim: 300
+embed_finetune: True
+
+# OUTPUT_DIR
+output_dir: ./saved_models
+results_dir: ./results
+log_dir: ./logs
+
+# TRAIN
+batch_size: 8
+epochs: 80
+early_max_patience: 10
+log_interval: 100
+
+# OPTIM
+learning_rate: 0.05
+weight_decay: 0.000001
+momentum: 0.0
+clip_max_norm_use: False
+clip_max_norm: None
+use_lr_decay: True
+lr_rate_decay: noam_step
+learning_rate_warmup_steps: 100
+min_lrate: 0.000005
+max_patience: 2
+
+# MODEL
+bidirection: true
+num_layers: 1
+hidden_dim: 256
+dropout_embed: 0.0
+dropout: 0.5
+num_filters: 100
+filter_sizes: 3,4,5
+
+# SVM.
+svm:
+    vectorizer: count
+    max_features: 2000
+    kernel: rbf
+    C: 0.5
+    verbose: true
+
+# Multinomial-NB.
+perform_nb: false
+nb:
+    vectorizer: count
+    alpha: 1.0
+    verbose: true
+
+# EVALUATION
+average: weighted
+auc_multiclass: ovr
