@@ -60,7 +60,7 @@ filter_sizes: 3,4,5
 svm:
     vectorizer: count
     max_features: 2000
-    kernel: rbf
+    kernel: linear
     C: 0.5
     verbose: true
 
