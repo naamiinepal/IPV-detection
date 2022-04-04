@@ -54,6 +54,9 @@ def main(args, logger):
         train_df.columns = val_df.columns = ('id', 'text', 'pol')
 
         # Vectorizer.
+        error_msg = "\nThe vectorizer should be one of ['count', 'tfidf'].\n"
+        assert (args.svm.vectorizer == "count") or (args.svm.vectorizer == "tfidf"), error_msg
+        
         if args.svm.vectorizer == "count":
             # For text.
             vectorizer = CountVectorizer(lowercase = False,
