@@ -29,8 +29,7 @@ def main(args, logger):
     # Record for storing train, val and test metrics.
     train_columns = ['train_acc', 'train_pr', 'train_rec', 'train_f1', 'train_auc']
     val_columns = ['val_acc', 'val_pr', 'val_rec', 'val_f1', 'val_auc']
-    test_columns = ['test_acc', 'test_pr', 'test_rec', 'test_f1', 'test_auc']
-    columns = train_columns + val_columns + test_columns
+    columns = train_columns + val_columns
 
     record = np.zeros((k_fold, len(columns)))
 
@@ -50,10 +49,9 @@ def main(args, logger):
         # Load train, val and test data.
         train_df = pd.read_csv(join(file_path, 'train.txt'), header = None)
         val_df = pd.read_csv(join(file_path, 'val.txt'), header = None)
-        test_df = pd.read_csv(join(file_path, 'test.txt'), header = None)
-
+        
         # Name columns.
-        train_df.columns = val_df.columns = test_df.columns = ('id', 'text', 'pol')
+        train_df.columns = val_df.columns = ('id', 'text', 'pol')
 
         # Main df.
         df = pd.concat([train_df, val_df])

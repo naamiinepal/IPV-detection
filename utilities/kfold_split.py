@@ -8,119 +8,137 @@ import os
 from os.path import join
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GroupShuffleSplit
-from sklearn.model_selection import train_test_split, StratifiedKFold
+import argparse
+from parso import parse
+from sklearn.model_selection import StratifiedKFold
 
 # Local Modules.
 from utilities import utils
+from read_configuration import DotDict
 
-# Parameters.
-random_seed = 1234
-root_raw = r'data/raw'
-save_path = r'data/kfold'
 
-#%% Read raw data.
+def argument_parser():
+    parser = argparse.ArgumentParser(description = "Argument Parser for Creating stratified K fold splits.")
+    parser.add_argument('-i', '--input_dir', default = r'data/raw', type = str, metavar = 'PATH',
+                        help = 'Path to raw data directory.')
+    parser.add_argument('-o', '--save_dir', default = r'data/kfold', type = str, metavar='PATH',
+                        help = 'Path to the data directory to store K fold splits.')
+    parser.add_argument('--log_dir', default = r'logs/splits', type = str, metavar = 'PATH',
+                        help = 'Directory to save logs.')
+    parser.add_argument('-k', '--kfolds', default=5, type=int, 
+                        help = 'Number of folds to generate.')                    
+    parser.add_argument('-r', '--random_seed', default=1234, type=int, 
+                        help = 'Random seed.')
+    parser.add_argument('-v', '--verbose', action = 'store_true', 
+                        help = 'Whether to display verbose.')
+    args = parser.parse_args()
+    return args
 
-# Load IPV examples.
-ipv = pd.read_csv(join(root_raw, 'IPV_sents.tsv'), delimiter = '\t', encoding = 'utf-8')
-ipv.columns = "id sents".split()
-ipv['pol'] = np.ones(len(ipv), dtype = np.int8)
-
-# Load IPV examples.
-non_ipv = pd.read_csv(join(root_raw, 'non-IPV_sents.tsv'), delimiter = '\t', encoding = 'utf-8')
-non_ipv.columns = "id sents".split()
-non_ipv['pol'] = np.zeros(len(non_ipv), dtype = np.int8)
-
-#%% Verbose.
-print("Number of IPV instances : ", len(ipv))
-print("Number of non-IPV instances : ", len(non_ipv))
-
-#%% Concat both.
-df = pd.concat([ipv, non_ipv], axis = 0).sample(frac = 1, random_state = random_seed)
-df.reset_index(drop = True, inplace = True)
-
-#%% GroupShuffle Split.
-# Split the df based on polarity labels.
-gss = GroupShuffleSplit(test_size=.20, n_splits=1, random_state = random_seed).split(df, groups=df['pol'])
-
-# Get positive and negative dataframe
-for positive_df, negative_df in gss:
-    
-    # Get data based on the index.
-    negative = df.iloc[negative_df]
-    positive = df.iloc[positive_df]
-    
-    print(negative)
-    print(positive)
-    
-    # Split 80/10/10 -> train, test, val based on polarity.
-    train_neg, test_val_neg = train_test_split(negative, test_size=0.2, random_state = random_seed)
-    train_pos, test_val_pos = train_test_split(positive, test_size=0.2, random_state = random_seed)
-    test_neg, val_neg = train_test_split(test_val_neg, test_size=0.5, random_state = random_seed)
-    test_pos, val_pos = train_test_split(test_val_pos, test_size=0.5, random_state = random_seed)
-    
-    # Concat negative and positive dataframe and shuffle
-    train_df = pd.concat([train_pos, train_neg], ignore_index=True).sample(frac=1).reset_index(drop=True)
-    test_df = pd.concat([test_pos, test_neg], ignore_index=True).sample(frac=1).reset_index(drop=True)
-    val_df = pd.concat([val_pos, val_neg], ignore_index=True).sample(frac=1).reset_index(drop=True)
-    
-    #utils.write_csv(df, target_filename)
-    
-#%% Stratified kfold.
-class StratifiedKFold3(StratifiedKFold):
+def log_object(args): 
     '''
-    Performs stratified 5-fold.
-    Returns: 
-        Train indices, val indices, test indices.
+    Generates a logger object.
+
+    Parameters
+    ----------
+    args : DotDict object.
+        Arguments for the project.
+
+    Returns
+    -------
+    logger : logger object on which log information can be written.
+    '''      
+    
+    # If the log directory does not exist, we'll create it.
+    if not os.path.exists(args.log_dir):
+        os.mkdir(args.log_dir)
+
+    name_ = f'Stratified_{args.kfolds}_fold_split.log'
+    log_file = os.path.join(args.log_dir, name_)
+
+    # Intialize Logger.
+    logger = utils.get_logger(log_file)
+    return logger
+
+def main(args, logger):
+    #%% Read raw data.
+
+    # Load IPV examples.
+    ipv = pd.read_csv(join(args.input_dir, 'IPV_sents.tsv'), delimiter = '\t', encoding = 'utf-8')
+    ipv.columns = "id sents".split()
+    ipv['pol'] = np.ones(len(ipv), dtype = np.int8)
+
+    # Load IPV examples.
+    non_ipv = pd.read_csv(join(args.input_dir, 'non-IPV_sents.tsv'), delimiter = '\t', encoding = 'utf-8')
+    non_ipv.columns = "id sents".split()
+    non_ipv['pol'] = np.zeros(len(non_ipv), dtype = np.int8)
+
+    #%% Verbose.
+    logger.info("Number of IPV instances : {}".format(len(ipv)))
+    logger.info("Number of non-IPV instances : {}".format(len(non_ipv)))
+
+    #%% Concat both and shuffle.
+    df = pd.concat([ipv, non_ipv], axis = 0).sample(frac = 1, random_state = args.random_seed)
+    df.reset_index(drop = True, inplace = True)
+
+    # Stratified k fold.
+    skf = StratifiedKFold(n_splits = args.kfolds)
+    target = df['pol'].values
+
+    for k, (train_id, val_id) in enumerate(skf.split(df, target), 1):
+        train = df.loc[train_id, :]
+        val = df.loc[val_id, :]
+
+        # Info.
+        logger.info(f'\nLength of training set : {len(train)}')
+        logger.info(f'Length of validation set : {len(val)}\n')
+
+        # Save files.
+        save_filepath = join(args.save_dir, str(k))
+        os.makedirs(save_filepath, exist_ok=True)
+        
+        logger.info(f'Saving files at : {save_filepath}...\n')
+
+        utils.write_csv(train, join(save_filepath, 'train.txt'))
+        utils.write_csv(val, join(save_filepath, 'val.txt'))
+        
+        logger.info(f"Success! Save date : {utils.current_timestamp()}\n")
+
+    #%% Verbose.
+    if args.verbose:
+        train_coll = {'0' : [], '1' : []}
+        val_coll = {'0' : [], '1' : []}
+
+        for k in range(1, 6):
+            save_filepath = join(args.save_dir, str(k))
+            train_df = pd.read_csv(join(save_filepath, 'train.txt'), header = None, encoding = 'utf-8')
+            val_df = pd.read_csv(join(save_filepath, 'val.txt'), header = None, encoding = 'utf-8')
+            
+            train_dict = train_df.iloc[:, -1].value_counts().to_dict()
+            val_dict = val_df.iloc[:, -1].value_counts().to_dict()
+            
+            train_coll['0'].append(train_dict[0])
+            train_coll['1'].append(train_dict[1])
+
+            val_coll['0'].append(val_dict[0])
+            val_coll['1'].append(val_dict[1])
+
+        logger.info("Size of train data across 5 folds : \n", train_coll)
+        logger.info("Size of validation data across 5 folds : \n", val_coll)
+
+if __name__ == '__main__':
     '''
-    def split(self, X, y, groups=None):
-        s = super().split(X, y, groups)
-        for train_indxs, test_indxs in s:
-            y_train = y[train_indxs]
-            train_indxs, cv_indxs = train_test_split(train_indxs,stratify=y_train, test_size=0.20)
-            yield train_indxs, cv_indxs, test_indxs
+    Driver Code.
+    '''
 
-# Instantiate.
-gg = StratifiedKFold3(5).split(df['sents'].values, df['pol'].values)
+    # Parse arguments.
+    args = argument_parser()
 
-# Write Results.
-for k, (train_id, val_id, test_id) in enumerate(gg, 1):
-    train_df = df.iloc[train_id, :]
-    val_df = df.iloc[val_id, :]
-    test_df = df.iloc[test_id, :]
-    
-    save_filepath = join(save_path, str(k))
-    os.makedirs(save_filepath, exist_ok=True)
-    
-    utils.write_csv(train_df, join(save_filepath, 'train.txt'))
-    utils.write_csv(val_df, join(save_filepath, 'val.txt'))
-    utils.write_csv(test_df, join(save_filepath, 'test.txt'))
+    # Access the configuration values using dot notation.
+    args = DotDict(vars(args))
 
-#%% Verbose.
-train_coll = {'0' : [], '1' : []}
-val_coll = {'0' : [], '1' : []}
-test_coll = {'0' : [], '1' : []}
+    # Instantiate logger object.
+    logger = log_object(args)
 
+    # Perform K fold Split.
+    main(args, logger)
 
-for k in range(1, 6):
-    save_filepath = join(save_path, str(k))
-    train_df = pd.read_csv(join(save_filepath, 'train.txt'), header = None, encoding = 'utf-8')
-    val_df = pd.read_csv(join(save_filepath, 'val.txt'), header = None, encoding = 'utf-8')
-    test_df = pd.read_csv(join(save_filepath, 'test.txt'), header = None, encoding = 'utf-8')
-    
-    train_dict = train_df.iloc[:, -1].value_counts().to_dict()
-    val_dict = val_df.iloc[:, -1].value_counts().to_dict()
-    test_dict = test_df.iloc[:, -1].value_counts().to_dict()
-    
-    train_coll['0'].append(train_dict[0])
-    train_coll['1'].append(train_dict[1])
-
-    val_coll['0'].append(val_dict[0])
-    val_coll['1'].append(val_dict[1])
-
-    test_coll['0'].append(test_dict[0])
-    test_coll['1'].append(test_dict[1])
-    
-print("Size of train data across 5 folds : \n", train_coll)
-print("Size of validation data across 5 folds : \n", val_coll)
-print("Size of test data across 5 folds : \n", test_coll)
