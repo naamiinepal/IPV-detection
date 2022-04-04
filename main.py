@@ -77,7 +77,6 @@ def parse_arguments():
                         help = "Whether to perform SVM.")
     parser.add_argument('--nb', action = 'store_true', 
                         help = "Whether to perform Naive Bayes.")
-    parser.add_argument('--kfoldssss', default = 5, type = int)
     args = parser.parse_args()
     
     return args
