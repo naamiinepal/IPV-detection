@@ -46,16 +46,12 @@ def main(args, logger):
         k = ii + 1
         file_path = join(data_path, str(k))
 
-        # Load train, val and test data.
+        # Load train and val data.
         train_df = pd.read_csv(join(file_path, 'train.txt'), header = None)
         val_df = pd.read_csv(join(file_path, 'val.txt'), header = None)
         
         # Name columns.
         train_df.columns = val_df.columns = ('id', 'text', 'pol')
-
-        # Main df.
-        df = pd.concat([train_df, val_df])
-        df.reset_index(drop = True, inplace = True)
 
         # Vectorizer.
         if args.svm.vectorizer == "count":
@@ -76,23 +72,20 @@ def main(args, logger):
                                         tokenizer = lambda sentence : tokenize(sentence),
                                         encoding = "utf-8")
         
-        vectorizer.fit(df['text'])
+        vectorizer.fit(train_df['text'])
         print(f"\nNumber of 'text' features loaded: {len(vectorizer.get_feature_names_out())}")
 
         # Input features : Vectorized texts.
         x_train = vectorizer.transform(train_df['text'])
         x_val = vectorizer.transform(val_df['text'])
-        x_test = vectorizer.transform(test_df['text'])
         
         # Gold Labels.
         y_train = train_df['pol']
         y_val = val_df['pol']
-        y_test = test_df['pol']
-
+    
         print(f'Train set shape : {x_train.shape}')
         print(f'Val set shape : {x_val.shape}')
-        print(f'Test set shape : {x_test.shape}')
-
+    
         # Initialize SVC.
         start = time()
         logger.info(f'\n Run program: {ml_utils.current_timestamp()}\n')
@@ -102,12 +95,10 @@ def main(args, logger):
         # Predictions.
         y_pred_train = svm.predict(x_train)
         y_pred_val = svm.predict(x_val)
-        y_pred_test = svm.predict(x_test)
-
+    
         # Evaluation.
         train_acc, train_pr, train_rec, train_f1, train_auc = ml_utils.classification_metrics(y_train, y_pred_train)
         val_acc, val_pr, val_rec, val_f1, val_auc = ml_utils.classification_metrics(y_val, y_pred_val)
-        test_acc, test_pr, test_rec, test_f1, test_auc = ml_utils.classification_metrics(y_test, y_pred_test)
 
         end = time()
 
@@ -117,7 +108,6 @@ def main(args, logger):
         record[ii] = (
                     train_acc, train_pr, train_rec, train_f1, train_auc,
                     val_acc, val_pr, val_rec, val_f1, val_auc,
-                    test_acc, test_pr, test_rec, test_f1, test_auc
                     )
                     
         # Verbose.
@@ -126,7 +116,6 @@ def main(args, logger):
             print('-'*50 + '\n')
             ml_utils.verbosity(train_acc, train_pr, train_rec, train_f1, train_auc, mode = 'train')
             ml_utils.verbosity(val_acc, val_pr, val_rec, val_f1, val_auc, mode = 'val')
-            ml_utils.verbosity(test_acc, test_pr, test_rec, test_f1, test_auc, mode = 'test')
 
     record_df = pd.DataFrame(record, index = np.arange(1, k + 1), columns = columns)
 
