@@ -3,6 +3,10 @@
 Created on Mon Apr  4 07:44:32 2022
 
 @author: Sagun Shakya
+
+Description:
+    Applies Stratified K-fold splits to the dataset (concat (IPV, non-IPV)) and 
+    saves them in a TXT file (comma delimited).
 """
 import os
 from os.path import join
