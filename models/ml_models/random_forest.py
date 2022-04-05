@@ -9,7 +9,7 @@ Created on Mon Apr  4 07:31:31 2022
 from os.path import join, exists
 import os
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from time import time
 
 import pandas as pd
@@ -23,6 +23,8 @@ filterwarnings(action='ignore')
 from models.ml_models import ml_utils
 
 def main(args, logger):
+    logger.info("Running Random Forest...\n")
+    
     # Num of k-folds.
     k_fold = args.kfold
 
@@ -55,22 +57,22 @@ def main(args, logger):
 
         # Vectorizer.
         error_msg = "\nThe vectorizer should be one of ['count', 'tfidf'].\n"
-        assert (args.svm.vectorizer == "count") or (args.svm.vectorizer == "tfidf"), error_msg
+        assert (args.random_forest.vectorizer == "count") or (args.random_forest.vectorizer == "tfidf"), error_msg
         
-        if args.svm.vectorizer == "count":
+        if args.random_forest.vectorizer == "count":
             # For text.
             vectorizer = CountVectorizer(lowercase = False,
                                         ngram_range = (1,2),
-                                        max_features= args.svm.max_features,
+                                        max_features= args.random_forest.max_features,
                                         preprocessor = lambda x: x,
                                         tokenizer = lambda sentence : tokenize(sentence),
                                         encoding = "utf-8")
         
-        elif args.svm.vectorizer == "tfidf":
+        elif args.random_forest.vectorizer == "tfidf":
             # For text.
             vectorizer = TfidfVectorizer(lowercase = False,
                                         ngram_range = (1,2),
-                                        max_features= args.svm.max_features,
+                                        max_features= args.random_forest.max_features,
                                         preprocessor = lambda x: x,
                                         tokenizer = lambda sentence : tokenize(sentence),
                                         encoding = "utf-8")
@@ -89,15 +91,21 @@ def main(args, logger):
         print(f'Train set shape : {x_train.shape}')
         print(f'Val set shape : {x_val.shape}')
     
-        # Initialize SVC.
+        # Initialize random_forest.
         start = time()
         logger.info(f'\n Run program: {ml_utils.current_timestamp()}\n')
-        svm = SVC(kernel = args.svm.kernel, C = args.svm.C)
-        svm.fit(x_train, y_train)
-
+        random_forest = RandomForestClassifier(n_estimators=args.random_forest.n_estimators,
+                                    criterion = args.random_forest.criterion,
+                                    max_features=args.random_forest.max_features,
+                                    min_samples_split=args.random_forest.min_samples_split,
+                                    min_samples_leaf = args.random_forest.min_samples_leaf,
+                                    random_state=args.random_forest.random_state,
+                                    )
+        random_forest.fit(x_train, y_train)
+        
         # Predictions.
-        y_pred_train = svm.predict(x_train)
-        y_pred_val = svm.predict(x_val)
+        y_pred_train = random_forest.predict(x_train)
+        y_pred_val = random_forest.predict(x_val)
     
         # Evaluation.
         train_acc, train_pr, train_rec, train_f1, train_auc = ml_utils.classification_metrics(y_train, y_pred_train)
@@ -114,7 +122,7 @@ def main(args, logger):
                     )
                     
         # Verbose.
-        if args.svm.verbose:
+        if args.random_forest.verbose:
             print(f'\nResults for k = {k}:')
             print('-'*50 + '\n')
             ml_utils.verbosity(train_acc, train_pr, train_rec, train_f1, train_auc, mode = 'train')
@@ -124,13 +132,14 @@ def main(args, logger):
     record_df = record_df.append([record_df.mean(), record_df.std()], ignore_index=True)
     
     # Average values.
-    logger.info(f'\nAverage Values:\n{record_df.mean(axis = 0).round(3)}\n')
+    logger.info(f'\nAverage Values:\n{record_df.iloc[:-2, :].mean(axis = 0).round(3)}\n')
 
     # To csv.
-    cache_path = join(args.cache_dir, 'svm')
+    cache_path = join(args.cache_dir, 'random_forest')
     if not exists(cache_path):
         os.mkdir(cache_path)
         
-    record_df.to_csv(join(cache_path, f'svm_{str(args.svm.kernel)}_{str(args.svm.C)}_{str(args.svm.max_features)}_results.csv'))
+    record_df.to_csv(join(cache_path, f'random_forest_{str(args.random_forest.n_estimators)}_{str(args.random_forest.criterion)}_{str(args.random_forest.vectorizer)}_{str(args.random_forest.max_features)}_results.csv'))
     logger.info("Results Summary: \n")
     logger.info(f"{record_df.round(3)}")
+
