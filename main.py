@@ -7,7 +7,7 @@ Created on Mon Apr  4 09:44:18 2022
 import os
 import argparse
 
-from models.ml_models import svm
+from models.ml_models import svm, naive_bayes, random_forest, logistic_regression
 from utilities import utils
 from utilities.read_configuration import DotDict
 
@@ -52,6 +52,10 @@ def log_object(args):
     if args.svm:
         name_ = f'svm_log_{args.svm.kernel}_{str(args.svm.C)}_{utils.timestamp()}.log'
         log_file = os.path.join(args.log_dir, name_)
+        
+    if args.svm:
+        name_ = f'nb_log_{args.nb.alpha}_{str(args.nb.vectorizer)}_{utils.timestamp()}.log'
+        log_file = os.path.join(args.log_dir, name_)
 
     else:    
         # Name output log file.
@@ -73,10 +77,7 @@ def parse_arguments():
 
     '''
     parser = argparse.ArgumentParser(description="Online IPVDetection argument parser.")
-    parser.add_argument('--svm', action = 'store_true', 
-                        help = "Whether to perform SVM.")
-    parser.add_argument('--nb', action = 'store_true', 
-                        help = "Whether to perform Naive Bayes.")
+    parser.add_argument('-m', '--model', choices=['svm', 'nb', 'random_forest'],  help = 'Type of model to run.')
     args = parser.parse_args()
     
     return args
@@ -100,8 +101,7 @@ def main():
     # Instantiate logger object.
     logger = log_object(args)
     
-    if args.svm:
-        svm.main(args, logger)
+    logistic_regression.main(args, logger)
     
     
 
