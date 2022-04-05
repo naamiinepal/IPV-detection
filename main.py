@@ -49,19 +49,20 @@ def log_object(args):
     if not os.path.exists(args.log_dir):
         os.mkdir(args.log_dir)
 
-    if args.svm:
-        name_ = f'svm_log_{args.svm.kernel}_{str(args.svm.C)}_{utils.timestamp()}.log'
-        log_file = os.path.join(args.log_dir, name_)
+    if args.model == "svm":
+        name_ = f'svm_log_{args.svm.kernel}_{str(args.svm.C)}_{str(args.vectorizer.mode)}.log'
         
-    if args.svm:
-        name_ = f'nb_log_{args.nb.alpha}_{str(args.nb.vectorizer)}_{utils.timestamp()}.log'
-        log_file = os.path.join(args.log_dir, name_)
+    elif args.model == "nb":
+        name_ = f'nb_log_{args.nb.alpha}_{str(args.vectorizer.mode)}.log'
 
-    else:    
-        # Name output log file.
-        log_suffix = '_' + args.model + '_' + str(args.train_type) + '.log'
-        log_file = os.path.join(args.log_dir, 'nepsa' + log_suffix)
-        
+    elif args.model == "logistic_regression":
+        name_ = f'logistic_regression_log_{args.logistic_regression.C}_{args.logistic_regression.max_iter}_{str(args.vectorizer.mode)}.log'
+    
+    else: 
+        name_ = 'experiment_log.log'
+    
+    log_file = os.path.join(args.log_dir, name_)
+
     # Intialize Logger.
     logger = utils.get_logger(log_file)
     return logger
