@@ -56,20 +56,32 @@ dropout: 0.5
 num_filters: 100
 filter_sizes: 3,4,5
 
+# Vectorizer.
+vectorizer:
+    mode: count
+    max_features: 1000
+
 # SVM.
 svm:
-    vectorizer: count
-    max_features: 2000
-    kernel: linear
-    C: 0.5
-    verbose: true
+    kernel: rbf
+    C: 0.1
 
 # Multinomial-NB.
-perform_nb: false
 nb:
-    vectorizer: count
     alpha: 1.0
-    verbose: true
+
+# Random Forest.
+random_forest:
+    n_estimators: 50
+    criterion: entropy
+    min_samples_split: 5
+    min_samples_leaf: 5
+    random_state: 100
+
+# Logistic Regression
+logistic_regression:
+    C: 0.01
+    max_iter: 100
 
 # EVALUATION
 average: weighted
