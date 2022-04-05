@@ -19,7 +19,7 @@ def classification_metrics(Y_true, Y_pred):
 
     return acc, pr, rec, f1, auc
 
-def verbosity(acc, pr, rec, f1, auc, mode = 'train'):
+def verbosity(acc, pr, rec, f1, auc, logger, mode = 'train'):
     '''
     Displays the Accuracy Score, Precision, Recall and F1 Score and ROC-AUC Score for train, val or test set.
     '''
@@ -27,13 +27,13 @@ def verbosity(acc, pr, rec, f1, auc, mode = 'train'):
     
     verbose = f'Results for {mode} set'
 
-    print('_'*len(verbose))
-    print(verbose)
-    print('_'*len(verbose))
+    logger.info('_'*len(verbose))
+    logger.info(verbose)
+    logger.info('_'*len(verbose))
     
-    print(f'Accuracy : {acc:0.3f}')
-    print(f'Precision : {pr:.3f}  ||  Recall : {rec:.3f}  ||  F1 Score : {f1:.3f}')
-    print(f'ROC-AUC Score : {auc:.3f}\n')
+    logger.info(f'Accuracy : {acc:0.3f}')
+    logger.info(f'Precision : {pr:.3f}  ||  Recall : {rec:.3f}  ||  F1 Score : {f1:.3f}')
+    logger.info(f'ROC-AUC Score : {auc:.3f}\n')
 
 def train_time(start_time, end_time):
     '''
