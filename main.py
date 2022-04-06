@@ -10,6 +10,7 @@ import argparse
 from models.ml_models import svm, naive_bayes, random_forest, logistic_regression, adaboost
 from utilities import utils
 from utilities.read_configuration import DotDict
+from models.ml_models.new_tool import InstantiateModel
 
 def parse_args_yaml(config_file = 'config.yaml'):
     '''
@@ -77,8 +78,10 @@ def parse_arguments():
         Arguments for the run.
 
     '''
+    CHOICES = ['svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression']
     parser = argparse.ArgumentParser(description="Online IPVDetection argument parser.")
-    parser.add_argument('-m', '--model', choices=['svm', 'nb', 'random_forest', 'adaboost'],  help = 'Type of model to run.')
+    parser.add_argument('-m', '--model', choices=CHOICES,  default = 'adaboost',
+                        help = 'Type of model to run.')
     args = parser.parse_args()
     
     return args
@@ -102,10 +105,8 @@ def main():
     # Instantiate logger object.
     logger = log_object(args)
     
-    # Run.
-    if args.model == 'adaboost':
-        adaboost.main(args, logger)
-    
+    mymodel = InstantiateModel(args, logger).__get__()
+    print(mymodel.__dict__)
 
 
 if __name__=='__main__':

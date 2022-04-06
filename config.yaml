@@ -84,8 +84,8 @@ logistic_regression:
 
 # AdaBoost Classifier.
 adaboost:
-    n_estimators: 50
-    learning_rate: 1.0
+    n_estimators: 150
+    learning_rate: 0.01
     random_state: 100
 
 # EVALUATION
