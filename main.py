@@ -7,7 +7,7 @@ Created on Mon Apr  4 09:44:18 2022
 import os
 import argparse
 
-from models.ml_models import svm, naive_bayes, random_forest, logistic_regression
+from models.ml_models import svm, naive_bayes, random_forest, logistic_regression, adaboost
 from utilities import utils
 from utilities.read_configuration import DotDict
 
@@ -78,7 +78,7 @@ def parse_arguments():
 
     '''
     parser = argparse.ArgumentParser(description="Online IPVDetection argument parser.")
-    parser.add_argument('-m', '--model', choices=['svm', 'nb', 'random_forest'],  help = 'Type of model to run.')
+    parser.add_argument('-m', '--model', choices=['svm', 'nb', 'random_forest', 'adaboost'],  help = 'Type of model to run.')
     args = parser.parse_args()
     
     return args
@@ -102,8 +102,9 @@ def main():
     # Instantiate logger object.
     logger = log_object(args)
     
-    logistic_regression.main(args, logger)
-    
+    # Run.
+    if args.model == 'adaboost':
+        adaboost.main(args, logger)
     
 
 

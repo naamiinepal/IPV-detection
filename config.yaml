@@ -8,7 +8,6 @@ wandb_config:
 data_file: ./data/raw
 data_path: ./data/kfold
 shuffle: True
-model: lstm
 train_type: 2
 kfold: 5
 root_path: ./data/kfold
@@ -78,10 +77,16 @@ random_forest:
     min_samples_leaf: 5
     random_state: 100
 
-# Logistic Regression
+# Logistic Regression.
 logistic_regression:
     C: 0.01
     max_iter: 100
+
+# AdaBoost Classifier.
+adaboost:
+    n_estimators: 50
+    learning_rate: 1.0
+    random_state: 100
 
 # EVALUATION
 average: weighted
