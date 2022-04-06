@@ -17,9 +17,9 @@ from warnings import filterwarnings
 filterwarnings(action='ignore')
 
 # Local Modules.
-from .ml_utils import classification_metrics, current_timestamp, verbosity
-from .pipeline import MLPipeline
-from .load_model import InstantiateModel
+from utilities.ml_utils import classification_metrics, current_timestamp, verbosity
+from dataloader.ml_pipeline import MLPipeline
+from models.ml_models.load_model import InstantiateModel
 
 class MLTrainer:
     def __init__(self, args, logger):
@@ -38,6 +38,9 @@ class MLTrainer:
         self.logger.info(f"{record_df.round(3)}")
 
     def _train_i_fold(self, k: int):
+        '''
+        Train only the i-th fold and return the results for train and validation sets.
+        '''
         # Pipeline object.
         pipe = MLPipeline(self.args, self.logger, k)
 
@@ -66,7 +69,9 @@ class MLTrainer:
 
 
     def train(self):
-
+        '''
+        Trains k - folds and saves the results in cache directory. 
+        '''
         # Num of folds.
         k_fold = self.args.kfold
 

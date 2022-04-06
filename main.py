@@ -7,7 +7,7 @@ Created on Mon Apr  4 09:44:18 2022
 import os
 import argparse
 
-from models.ml_models.ml_trainer import MLTrainer
+from trainer.ml_trainer import MLTrainer
 from utilities import utils
 from utilities.read_configuration import DotDict
 
@@ -48,19 +48,8 @@ def log_object(args):
     # If the log directory does not exist, we'll create it.
     if not os.path.exists(args.log_dir):
         os.mkdir(args.log_dir)
-
-    if args.model == "svm":
-        name_ = f'svm_log_{args.svm.kernel}_{str(args.svm.C)}_{str(args.vectorizer.mode)}.log'
-        
-    elif args.model == "nb":
-        name_ = f'nb_log_{args.nb.alpha}_{str(args.vectorizer.mode)}.log'
-
-    elif args.model == "logistic_regression":
-        name_ = f'logistic_regression_log_{args.logistic_regression.C}_{args.logistic_regression.max_iter}_{str(args.vectorizer.mode)}.log'
     
-    else: 
-        name_ = 'experiment_log.log'
-    
+    name_ = f'{args.model}_{args.vectorizer.mode}_{args.vectorizer.max_features}.log'
     log_file = os.path.join(args.log_dir, name_)
 
     # Intialize Logger.
@@ -78,7 +67,7 @@ def parse_arguments():
 
     '''
     CHOICES = ['svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression']
-    parser = argparse.ArgumentParser(description="Online IPVDetection argument parser.")
+    parser = argparse.ArgumentParser(description="Online IPV Detection argument parser.")
     parser.add_argument('-m', '--model', choices=CHOICES,  default = 'adaboost',
                         help = 'Type of model to run.')
     args = parser.parse_args()
