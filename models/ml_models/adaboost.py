@@ -91,7 +91,7 @@ def main(args, logger):
     if not exists(cache_path):
         os.mkdir(cache_path)
         
-    record_df.to_csv(join(cache_path, f'adeaboost_{str(args.vectorizer.mode)}_{str(args.vectorizer.max_features)}_{str(args.adaboost.n_estimators)}_{str(args.adaboost.learning_rate)}_results.csv'))
+    record_df.to_csv(join(cache_path, f'adaboost_{str(args.vectorizer.mode)}_{str(args.vectorizer.max_features)}_{str(args.adaboost.n_estimators)}_{str(args.adaboost.learning_rate)}_results.csv'))
     logger.info("Results Summary: \n")
     logger.info(f"{record_df.round(3)}")
 
