@@ -71,11 +71,11 @@ nb:
 
 # Random Forest.
 random_forest:
-    n_estimators: 50
+    n_estimators: 100
     criterion: entropy
-    min_samples_split: 5
+    min_samples_split: 3
     min_samples_leaf: 5
-    random_state: 100
+    random_state: 1000
 
 # Logistic Regression.
 logistic_regression:

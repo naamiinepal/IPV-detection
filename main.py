@@ -7,10 +7,9 @@ Created on Mon Apr  4 09:44:18 2022
 import os
 import argparse
 
-from models.ml_models import svm, naive_bayes, random_forest, logistic_regression, adaboost
+from models.ml_models.ml_trainer import MLTrainer
 from utilities import utils
 from utilities.read_configuration import DotDict
-from models.ml_models.new_tool import InstantiateModel
 
 def parse_args_yaml(config_file = 'config.yaml'):
     '''
@@ -105,8 +104,9 @@ def main():
     # Instantiate logger object.
     logger = log_object(args)
     
-    mymodel = InstantiateModel(args, logger).__get__()
-    print(mymodel.__dict__)
+    # Train ML Classifier.
+    ml_trainer = MLTrainer(args, logger)
+    ml_trainer.train()
 
 
 if __name__=='__main__':

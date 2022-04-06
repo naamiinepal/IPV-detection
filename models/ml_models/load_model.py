@@ -22,6 +22,8 @@ class InstantiateModel:
             self.model = MultinomialNB()
         elif self.model_name == 'random_forest':
             self.model = RandomForestClassifier()
+        else: 
+            raise AssertionError
         
         # Update the parameters with ours.
         update_dict = self.args[self.model_name]
