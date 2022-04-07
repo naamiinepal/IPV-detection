@@ -10,8 +10,9 @@ Description:
 # Importing necessary Libraries.
 
 import io
+import os
 import logging
-from os.path import exists
+from os.path import exists, join
 import numpy as np
 from pandas import DataFrame
 import yaml
@@ -19,6 +20,51 @@ from datetime import datetime
 from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 
 # Helper Functions.
+def parse_args_yaml(config_file = 'config.yaml'):
+    '''
+    Parses the arguments from config file (in YAML format).
+
+    Parameters
+    ----------
+    config_file : str, optional
+        Path to the config file. The default is 'config.yaml'.
+
+    Returns
+    -------
+    args : DotDict object
+        Arguments to be used in the project. The values can be accessed by using notation.
+
+    '''
+    # Processing the hyperparameters.
+    configuration = load_config(config_file)
+    
+    return configuration
+
+def log_object(args): 
+    '''
+    Generates a logger object.
+
+    Parameters
+    ----------
+    args : DotDict object.
+        Arguments for the project.
+
+    Returns
+    -------
+    logger : logger object on which log information can be written.
+    '''      
+    
+    # If the log directory does not exist, we'll create it.
+    if not exists(args.log_dir):
+        os.mkdir(args.log_dir)
+    
+    name_ = f'{args.model}_{args.vectorizer.mode}_{args.vectorizer.max_features}.log'
+    log_file = join(args.log_dir, name_)
+
+    # Intialize Logger.
+    logger = get_logger(log_file)
+    return logger
+
 def write_csv(df: DataFrame, target_filename: str):
     '''
     Writes a csv file for the dataframe.
