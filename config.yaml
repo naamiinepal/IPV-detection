@@ -1,17 +1,17 @@
+# WandB.
 wandb_config:
     WandB: true      # Whether to run this is WandB platform.
-    project_name: 'TABSA Sentiment Classification non-concat LSTM patience'
+    project_name: 'Online IPV Classification'
     entity: 'sagun-shakya'
     run_name: "nepsa_non_concat"
     
 # DATA
 data_file: ./data/raw
 data_path: ./data/kfold
-shuffle: True
+shuffle: true
 train_type: 2
 kfold: 5
 root_path: ./data/kfold
-device: cpu
 verbose: true
 data_filename: ss_ac_at_txt_unbal
 cache_dir: ./cache_dir 
@@ -46,14 +46,22 @@ learning_rate_warmup_steps: 100
 min_lrate: 0.000005
 max_patience: 2
 
-# MODEL
-bidirection: true
-num_layers: 1
-hidden_dim: 256
-dropout_embed: 0.0
-dropout: 0.5
-num_filters: 100
-filter_sizes: 3,4,5
+# MODELs.
+lstm: &rnn
+    bidirection: true
+    num_layers: 1
+    hidden_dim: 256
+    dropout_embed: 0.0
+    dropout: 0.5
+
+gru: 
+    <<: *rnn
+
+cnn:
+    num_filters: 100
+    filter_sizes: 2,3,4
+    dropout_embed: 0.0
+    dropout: 0.5
 
 # Vectorizer.
 vectorizer:
