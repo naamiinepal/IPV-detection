@@ -11,6 +11,7 @@ from numpy import random as rdm
 import torch
 
 # Local Modules.
+from dataloader.dl_dataloader import Dataloader
 from trainer.ml_trainer import MLTrainer
 from utilities import utils
 from utilities.read_configuration import DotDict
@@ -71,9 +72,13 @@ def main():
     logger.info(f'\nRunning on CUDA : {use_cuda}\n')   
 
     # Train ML Classifier.
-    ml_trainer = MLTrainer(args, logger)
-    ml_trainer.train()
+    #ml_trainer = MLTrainer(args, logger)
+    #ml_trainer.train()
 
+    data_loader = Dataloader(args, 1, device)
+    train_dl, val_dl = data_loader.load_data(args.batch_size)
+    temp = next(iter(train_dl))
+    print(temp.TEXT)
 
 if __name__=='__main__':
     '''
