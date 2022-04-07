@@ -13,7 +13,6 @@ from os.path import join
 import pandas as pd
 import numpy as np
 import argparse
-from parso import parse
 from sklearn.model_selection import StratifiedKFold
 
 # Local Modules.
