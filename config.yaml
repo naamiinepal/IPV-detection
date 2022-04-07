@@ -11,7 +11,7 @@ data_path: ./data/kfold
 shuffle: true
 kfold: 5
 verbose: true
-data_filename: ss_ac_at_txt_unbal
+data_filename: ipv
 cache_dir: ./cache_dir 
 
 # EMBEDDINGS
@@ -22,7 +22,7 @@ embedding_dim: 300
 embed_finetune: True
 
 # OUTPUT_DIR
-output_dir: ./saved_models
+output_dir: ./saved_model_dir
 results_dir: ./results
 log_dir: ./logs
 
@@ -45,15 +45,12 @@ min_lrate: 0.000005
 max_patience: 2
 
 # MODELs.
-lstm: &rnn
+rnn:
     bidirection: true
     num_layers: 1
     hidden_dim: 256
     dropout_embed: 0.0
     dropout: 0.5
-
-gru: 
-    <<: *rnn
 
 cnn:
     num_filters: 100
