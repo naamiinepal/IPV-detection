@@ -9,9 +9,7 @@ wandb_config:
 data_file: ./data/raw
 data_path: ./data/kfold
 shuffle: true
-train_type: 2
 kfold: 5
-root_path: ./data/kfold
 verbose: true
 data_filename: ss_ac_at_txt_unbal
 cache_dir: ./cache_dir 
