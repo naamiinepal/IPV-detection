@@ -66,10 +66,12 @@ def parse_arguments():
         Arguments for the run.
 
     '''
-    CHOICES = ['svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression']
+    CHOICES = ['svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression'] + ['lstm', 'gru', 'cnn', 'mbert']
     parser = argparse.ArgumentParser(description="Online IPV Detection argument parser.")
     parser.add_argument('-m', '--model', choices=CHOICES,  default = 'adaboost',
                         help = 'Type of model to run.')
+    parser.add_argument('-t', '--train_type', choices = ['text', 'atsa', 'acsa', 'concat'], default = 'text',
+                        help = 'Type of training: Should be one of {"text : text only", "atsa : text + at", "acsa : text + ac", "concat : text + at + ac"}.')
     args = parser.parse_args()
     
     return args
