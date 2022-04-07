@@ -34,24 +34,24 @@ class Dataloader():
             Which device to use out of {'cpu', 'cuda'}.
         '''
         self.device = device
-        self.data_path = os.path.join(args.data_path, k)
+        self.data_path = os.path.join(args.data_path, str(k))
         self.batch_size = args.batch_size
         
         self.txt_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
+        self.id_field = data.Field(unk_token='<unk>', batch_first=True)
         #self.at_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
         #self.ac_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
-        self.ipv_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
-              
+          
         #self.fields = (('IPV', self.ipv_field), ('ASPECT', self.ac_field), 
         #               ('TERM', self.at_field), ('TEXT', self.txt_field))            
 
-        self.fields = (('IPV', self.ipv_field), ('TEXT', self.txt_field))
+        self.fields = ((None, None), ('TEXT', self.txt_field), ('IPV', self.ipv_field))
 
         self.train_ds, self.val_ds = data.TabularDataset.splits(path=self.data_path, 
-                                                    format='csv', 
-                                                    train='train.txt', 
-                                                    validation='val.txt',                         
-                                                    fields=self.fields)
+                                                                format='csv', 
+                                                                train='train.txt', 
+                                                                validation='val.txt',                         
+                                                                fields=self.fields)
 
         self.embedding_dir = args.emb_dir
         self.vec = vocab.Vectors(name=args.emb_file, cache=self.embedding_dir)
@@ -59,6 +59,7 @@ class Dataloader():
         self.txt_field.build_vocab(self.train_ds.TEXT, self.val_ds.TEXT, max_size=None, vectors=self.vec)
         #self.at_field.build_vocab(self.train_ds.TERM, self.val_ds.TERM, max_size=None, vectors=self.vec)
         #self.ac_field.build_vocab(self.train_ds.ASPECT)
+        self.id_field.build_vocab(self.train_ds.ID)
         self.ipv_field.build_vocab(self.train_ds.IPV)
                     
         self.vocab_size = len(self.txt_field.vocab)
@@ -118,7 +119,7 @@ class Dataloader():
         print('Length of text vocab (unique words in dataset) = ', self.vocab_size)
         print('Length of label vocab (unique tags in labels) = ', self.tagset_size)
     
-    def load_data(self, batch_size, shuffle = False):
+    def load_data(self, batch_size: int, shuffle = False):
         '''
         Generates the data iterators for train, validation and test data.
 
@@ -132,7 +133,7 @@ class Dataloader():
         Returns
         -------
         train_iter : training Dataloader instance.
-        val_iter : training Dataloader instance.
+        val_iter : validation Dataloader instance.
         '''
         
         train_iter, val_iter = data.BucketIterator.splits(datasets=(self.train_ds, self.val_ds), 
