@@ -16,9 +16,9 @@ class RNN(nn.Module):
     def __init__(self, config, dataloader):
         super().__init__()
         self.config = config
-        self.bidirectional = config.lstm.bidirection
-        self.num_layers = config.lstm.num_layers
-        self.hidden_dim = config.lstm.hidden_dim
+        self.bidirectional = config.rnn.bidirection
+        self.num_layers = config.rnn.num_layers
+        self.hidden_dim = config.rnn.hidden_dim
         self.vocab_size = dataloader.vocab_size
         self.tagset_size = dataloader.tagset_size
         self.embedding_dim = config.embedding_dim
