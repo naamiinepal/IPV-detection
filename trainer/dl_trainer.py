@@ -321,6 +321,7 @@ class Trainer():
         
         best_valid_loss = float('inf')
         best_valid_acc = 0.0
+        valid_cache = []
         counter = 0
 
         for epoch in range(0, self.epochs):
@@ -366,6 +367,10 @@ class Trainer():
                 counter=0
                 if self.verbose:
                     self.logger.info(f"Best model saved at {self.model_file}.\n")
+
+                # Save cache.
+                valid_cache = [valid_loss, valid_acc, valid_pr, valid_rec, valid_f1, valid_auc]
+
             else:
                 counter += 1
                 if self.verbose:
@@ -417,7 +422,7 @@ class Trainer():
         # Convert to csv file.
         cache_df.to_csv(cache_filename, index = None, sep = ',')
 
-        return cache_df
+        return valid_cache
     
     # Predict
     def predict(self):
