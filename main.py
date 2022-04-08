@@ -7,12 +7,15 @@ Created on Mon Apr  4 09:44:18 2022
 import os
 import argparse
 import random
-from numpy import random as rdm
+from numpy import empty, random as rdm
+from pandas import DataFrame
 import torch
 
 # Local Modules.
 from dataloader.dl_dataloader import Dataloader
+from models.dl_models.models import RNN
 from trainer.ml_trainer import MLTrainer
+from trainer.dl_trainer import Trainer
 from utilities import utils
 from utilities.read_configuration import DotDict
 
@@ -45,7 +48,44 @@ def parse_arguments():
     args = parser.parse_args()
     
     return args
-    
+
+def train_dl_model(args, logger, device):
+    cache_df = DataFrame(empty((5, 6)), 
+                        columns = ['validation loss',
+                                    'validation accuracy',
+                                    'validation precision',
+                                    'validation recall',
+                                    'validation f1 score',
+                                    'validation roc-auc score']
+                        )
+
+
+    for k in [1]:
+        data_loader = Dataloader(args, k, device)
+        train_dl, val_dl = data_loader.load_data(args.batch_size)
+
+        # Instantiate model.
+        if args.model == 'lstm':
+            model = RNN(args, data_loader)
+        
+        assert model is not None, "Instantiate model!"
+
+        # Set up trainer.
+        trainer = Trainer(args, logger, data_loader, model, k)
+        cache = trainer.fit()
+        cache_df.iloc[k - 1, :] = cache
+
+    # Take average across all folds.
+    cache_df = cache_df.append([cache_df.mean(), cache_df.std()], ignore_index = True)
+
+    # Save cache for each fold.
+    cache_dir = os.makedirs(os.path.join(args.cache_dir, args.model), exist_ok=True)
+    cache_filename = f'Val_preds_{args.model}_{args.train_type}_lr_{args.learning_rate}_{args.epochs}.csv'
+    cache_df.to_csv(os.path.join(cache_dir, cache_filename), index = None)
+
+    logger.info("Training Completed!\n")
+
+
 def main():
     '''
     Main function called in the driver code.
@@ -75,10 +115,8 @@ def main():
     #ml_trainer = MLTrainer(args, logger)
     #ml_trainer.train()
 
-    data_loader = Dataloader(args, 1, device)
-    train_dl, val_dl = data_loader.load_data(args.batch_size)
-    temp = next(iter(train_dl))
-    print(temp.TEXT)
+    train_dl_model(args, logger, device)
+
 
 if __name__=='__main__':
     '''
