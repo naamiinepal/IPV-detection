@@ -48,7 +48,7 @@ class RNN(nn.Module):
         
         self.fc = nn.Linear(self.hidden_dim * 2, self.tagset_size)
         
-        self.dropout = nn.Dropout(config.dropout)
+        self.dropout = nn.Dropout(config.rnn.dropout)
         
     def forward(self, text):                # TAKE IN AC AND AT LATER.
         text = text.permute(1, 0)   # BEFORE: (batch_size, sent_len) --> AFTER: (sent_len, batch_size)
