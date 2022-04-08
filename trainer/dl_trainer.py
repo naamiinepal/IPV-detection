@@ -8,8 +8,6 @@ Description:
     Main Trainer class.
 """
 
-from utilities.evaluator import Evaluator
-from utilities.utils import compute_prec_rec_f1
 
 import wandb
 from os import path, mkdir
@@ -19,6 +17,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 torch.manual_seed(166)
+
+from trainer.evaluator import Evaluator
+from utilities.utils import compute_prec_rec_f1
 
 from tqdm import tqdm
 tqdm.pandas(desc='Progress')
@@ -194,12 +195,14 @@ class Trainer():
         
         model.train()
 
-        for ((y, ac, at, X), v) in iterator:
+        for coll in iterator:
+            X = coll.TEXT
+            Y = coll.IPV
 
             optimizer.zero_grad()
                         
-            predictions = model(X, at, ac)              # Shape -> (batch_size, 2)
-            gold = y
+            predictions = model(X)              # Shape -> (batch_size, 2)
+            gold = Y
 
             gold = gold.squeeze(1)                      # Shape -> (batch_size)
 
@@ -257,10 +260,12 @@ class Trainer():
         
         with torch.no_grad():
 
-            for ((y, ac, at, X), v) in iterator:
-                
-                predictions = model(X, at, ac)      # Shape -> (batch_size, 2)
-                gold = y                            # Shape -> (batch_size, 1)
+            for coll in iterator:
+                X = coll.TEXT
+                Y = coll.IPV
+
+                predictions = model(X)           # Shape -> (batch_size, 2)
+                gold = Y                         # Shape -> (batch_size, 1)
                 
                 # True label.
                 gold = gold.squeeze(1)              # Shape -> (batch_size)                        
@@ -388,12 +393,14 @@ class Trainer():
         if self.config.wandb_config.WandB:
             wandb.summary['best validation loss'] = best_valid_loss
             wandb.summary['best validation accuracy'] = best_valid_acc
-            
-        if not path.exists(self.config.cache_dir):
-            mkdir('./cache_dir')
         
+        cache_dir = self.config.cache_dir
+        if not path.exists(cache_dir):
+            mkdir('./cache_dir')
+            cache_dir = './cache_dir'
+
         # Output file path.
-        cache_filename = path.join(self.config.cache_dir, f'cache_{self.config.model}_{str(self.k)}.csv')
+        cache_filename = path.join(cache_dir, f'cache_{self.config.model}_{self.config.train_type}_{str(self.k)}.csv')
         
         # Pandas DataFrame.
         cache_df = DataFrame(cache)
