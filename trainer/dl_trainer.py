@@ -27,7 +27,7 @@ tqdm.pandas(desc='Progress')
 # Decay functions to be used with lr_scheduler
 def lr_decay_noam(config):
     return lambda t: (
-        10.0 * config.lstm.hidden_dim**-0.5 * min(
+        10.0 * config.rnn.hidden_dim**-0.5 * min(
         (t + 1) * config.learning_rate_warmup_steps**-1.5, (t + 1)**-0.5))
 
 def lr_decay_exp(config):
@@ -70,8 +70,8 @@ class Trainer():
         self.loss_fn = nn.CrossEntropyLoss()
 
         self.opt = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), 
-                            lr=config.learning_rate, 
-                            weight_decay=config.weight_decay)
+                                lr = float(config.learning_rate), 
+                                weight_decay=config.weight_decay)
         
         self.lr_scheduler_step = self.lr_scheduler_epoch = None
         
