@@ -364,10 +364,12 @@ class Trainer():
                 self.save_checkpoint()
                 best_valid_loss = valid_loss
                 counter=0
-                self.logger.info(f"Best model saved at {self.model_file}.\n")
+                if self.verbose:
+                    self.logger.info(f"Best model saved at {self.model_file}.\n")
             else:
                 counter += 1
-                self.logger.info(f'No improvement in validation loss. Tolerance count : {counter}\n')            
+                if self.verbose:
+                    self.logger.info(f'No improvement in validation loss. Tolerance count : {counter}\n')            
             
             if valid_acc > best_valid_acc:
                 best_valid_acc = valid_acc
@@ -378,16 +380,19 @@ class Trainer():
             # Train Verbose.
             train_verbose1 = f'Train Loss: {train_loss:.3f} || Train Acc: {train_acc:.3f}\n'
             train_verbose2 = f'Train Precision: {train_pr:.3f} || Train Recall: {train_rec:.3f} || Train F1 Score:{train_f1:.3f} || Train ROC-AUC Score: {train_auc:.3f}\n'
-            self.logger.info(train_verbose1 + train_verbose2)
+            if self.verbose:
+                self.logger.info(train_verbose1 + train_verbose2)
             
             # Valid verbose.
             valid_verbose1 = f'\nValid Loss: {valid_loss:.3f} || Valid Acc: {valid_acc:.3f}\n'
             valid_verbose2 = f'Valid Precision: {valid_pr:.3f} || Valid Recall: {valid_rec:.3f} || Valid F1 Score:{valid_f1:.3f} || Valid ROC-AUC Score: {valid_auc:.3f}\n'
-            self.logger.info(valid_verbose1 + valid_verbose2)
+            if self.verbose:
+                self.logger.info(valid_verbose1 + valid_verbose2)
             
             # Check for early stopping.
             if counter >= self.early_max_patience: 
-                self.logger.info(f"Training stopped because maximum tolerance of {self.early_max_patience} reached.")
+                if self.verbose:
+                    self.logger.info(f"Training stopped because maximum tolerance of {self.early_max_patience} reached.")
                 break
         
         if self.config.wandb_config.WandB:
@@ -399,14 +404,20 @@ class Trainer():
             mkdir('./cache_dir')
             cache_dir = './cache_dir'
 
+        cache_dir = path.join(cache_dir, self.config.model)
+        if not path.exists(cache_dir):
+            mkdir(cache_dir)
+
         # Output file path.
-        cache_filename = path.join(cache_dir, f'cache_{self.config.model}_{self.config.train_type}_{str(self.k)}.csv')
+        cache_filename = path.join(cache_dir, f'cache_{self.config.model}_{self.config.train_type}_Fold_{str(self.k)}.csv')
         
         # Pandas DataFrame.
         cache_df = DataFrame(cache)
         
         # Convert to csv file.
         cache_df.to_csv(cache_filename, index = None, sep = ',')
+
+        return cache_df
     
     # Predict
     def predict(self):
