@@ -292,8 +292,8 @@ class Trainer():
         
         assert len(gold_list) == len(pred_list), f"The gold list has length {len(gold_list)} while the predicted list has length {len(pred_list)}."
         
-        avg_epoch_loss =  epoch_loss / self.test_dlen
-        avg_epoch_acc = epoch_acc / self.test_dlen
+        avg_epoch_loss =  epoch_loss / self.val_dlen
+        avg_epoch_acc = epoch_acc / self.val_dlen
         
         
         return avg_epoch_loss, avg_epoch_acc, gold_list, pred_list
