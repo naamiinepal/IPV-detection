@@ -1,6 +1,6 @@
 # WandB.
 wandb_config:
-    WandB: true      # Whether to run this is WandB platform.
+    WandB: false      # Whether to run this is WandB platform.
     project_name: 'Online IPV Classification'
     entity: 'sagun-shakya'
     run_name: "nepsa_non_concat"
@@ -33,7 +33,7 @@ early_max_patience: 10
 log_interval: 100
 
 # OPTIM
-learning_rate: 0.05
+learning_rate: 1e-3
 weight_decay: 0.000001
 momentum: 0.0
 clip_max_norm_use: False
