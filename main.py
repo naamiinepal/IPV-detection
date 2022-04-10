@@ -60,7 +60,9 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
                                     'validation roc-auc score']
                         )
 
-    logger.info(f'Training Started on {utils.current_timestamp()}.')
+    logger.info(f'Training Started on {utils.current_timestamp()}.')\
+
+    # Run training across different folds.
     for k in [1]:
         data_loader = Dataloader(args, k, device)
         train_dl, val_dl = data_loader.load_data(args.batch_size)
