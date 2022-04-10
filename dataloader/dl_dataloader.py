@@ -12,6 +12,7 @@ import torch
 from torchtext.legacy import data
 from torchtext import vocab
 from torchtext import datasets
+from transformers import BertTokenizer
 
 # Local modules.
 from utilities.read_configuration import DotDict
@@ -37,8 +38,19 @@ class Dataloader():
         self.data_path = os.path.join(args.data_path, str(k))
         self.batch_size = args.batch_size
         
-        self.txt_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
-        self.ipv_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
+        if args.model == 'bert' or args.model == 'muril':
+            self.tokenizer = BertTokenizer.from_pretrained(args.bert.model_name) 
+            self.PAD_INDEX = self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token)
+            self.UNK_INDEX = self.tokenizer.convert_tokens_to_ids(self.tokenizer.unk_token)
+            self.txt_field = data.Field(use_vocab = False, 
+                                        tokenize = self.tokenizer.encode,
+                                        batch_first = True,
+                                        pad_token = self.PAD_INDEX,
+                                        unk_token = self.UNK_INDEX)
+        else:
+            self.txt_field = data.Field(tokenize = self.tokenizer, use_vocab = True, unk_token = '<unk>', batch_first = True)
+
+        self.ipv_field = data.Field(batch_first=True, unk_token=None, pad_token=None, use_vocab = False, sequential = False, is_target = True)
         #self.id_field = data.Field(unk_token='<unk>', batch_first=True)
         #self.at_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
         #self.ac_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
@@ -46,7 +58,7 @@ class Dataloader():
         #self.fields = (('IPV', self.ipv_field), ('ASPECT', self.ac_field), 
         #               ('TERM', self.at_field), ('TEXT', self.txt_field))            
 
-        self.fields = ((None, None), ('TEXT', self.txt_field), ('IPV', self.ipv_field))
+        self.fields = ((None, None), ('TEXT', self.txt_field), ('IPV', self.ipv_field))          # THIS WILL BE MODIFIED AFTER ASPECT TERMS AND CATEGORIES ARE ADDED.
 
         self.train_ds, self.val_ds = data.TabularDataset.splits(path=self.data_path, 
                                                                 format='csv', 
