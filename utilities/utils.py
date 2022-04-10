@@ -226,3 +226,17 @@ def reset_weights(m):
             print(f'Resetting trainable parameters of layer = {layer}')
             layer.reset_parameters()
             print('Successful!\n')
+
+def count_parameters(model) -> str:
+    '''
+    Counts the number of trainable parameters.
+    Parameters
+    ----------
+    model : torch model
+    Returns
+    -------
+    str
+        Verbose.
+    '''
+    num_par = sum(p.numel() for p in model.parameters() if p.requires_grad)    
+    return f'\nThe model has {num_par:,} trainable parameters.'
