@@ -10,7 +10,7 @@ Description:
 
 
 import wandb
-from os import path, mkdir
+from os import path, mkdir, makedirs
 from pandas import DataFrame
 import torch
 import torch.nn as nn
@@ -105,10 +105,10 @@ class Trainer():
                 raise ValueError("Unknown lr decay range {}".format(lrd_range))
 
         self.k = k
-        self.model_name = config.model + '_' + str(config.train_type) + '_Fold_' + str(self.k)
+        self.model_name = f'{config.model}_{config.train_type}_{config.learning_rate}_Fold_{self.k}'
         self.file_name = self.model_name + '.pth'
-        #self.model_file = os.path.join(config.output_dir, self.file_name)    # MODIFIED.
-        self.model_file = path.join(config.output_dir, self.file_name)
+        makedirs(path.join(config.output_dir, config.model), exist_ok = True)
+        self.model_file = path.join(config.output_dir, config.model, self.file_name)
         
         self.total_train_loss = []
         self.total_train_acc = []
