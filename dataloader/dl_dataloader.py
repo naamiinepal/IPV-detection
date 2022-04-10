@@ -114,11 +114,12 @@ class Dataloader():
         """
         Prints the data statistics.
         """
-        print('Location of dataset = ', self.data_path)
+        print('\nLocation of dataset = ', self.data_path)
         print('Length of training dataset = ', len(self.train_ds))
         print('Length of validation dataset = ', len(self.val_ds))
         print('Length of text vocab (unique words in dataset) = ', self.vocab_size)
         print('Length of label vocab (unique tags in labels) = ', self.tagset_size)
+        print()
     
     def load_data(self, batch_size: int, shuffle = False):
         '''
