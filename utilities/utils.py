@@ -58,7 +58,7 @@ def log_object(args):
     if not exists(args.log_dir):
         os.mkdir(args.log_dir)
     
-    name_ = f'{args.model}_{args.vectorizer.mode}_{args.vectorizer.max_features}.log'
+    name_ = f'{args.model}.log'
     log_file = join(args.log_dir, name_)
 
     # Intialize Logger.
