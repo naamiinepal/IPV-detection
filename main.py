@@ -13,7 +13,7 @@ import torch
 
 # Local Modules.
 from dataloader.dl_dataloader import Dataloader
-from models.dl_models.models import RNN
+from models.dl_models.models import RNN, CNN
 from trainer.ml_trainer import MLTrainer
 from trainer.dl_trainer import Trainer
 from utilities import utils
@@ -27,8 +27,8 @@ torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 # Permissible models.
-ML_MODELS = ['svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression']
-DL_MODELS = ['lstm', 'gru', 'cnn', 'mbert']
+ML_MODELS = ('svm', 'nb', 'random_forest', 'adaboost', 'logistic_regression')
+DL_MODELS = ('lstm', 'gru', 'cnn', 'mbert', 'muril')
 MODEL_CHOICES = ML_MODELS + DL_MODELS
 
 
@@ -44,8 +44,8 @@ def parse_arguments():
     '''
     parser = argparse.ArgumentParser(description="Online IPV Detection argument parser.")
 
-    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'lstm',
-                        help = 'Type of model to run.')
+    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'cnn',
+                        help = f'Type of model to run.\nShould be one of {MODEL_CHOICES}.')
     parser.add_argument('-t', '--train_type', choices = ['text', 'atsa', 'acsa', 'concat'], default = 'text',
                         help = 'Type of training: Should be one of {"text : text only", "atsa : text + at", "acsa : text + ac", "concat : text + at + ac"}.')
     
@@ -84,17 +84,18 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
                                     'validation roc-auc score']
                         )
 
-    logger.info(f'Training Started on {utils.current_timestamp()}.')\
-    
+    logger.info(f'Training Started on {utils.current_timestamp()}.')    
         
     # Run training across different folds.
-    for k in [1,2,3]:
+    for k in [1]:
         data_loader = Dataloader(args, k, device)
         train_dl, val_dl = data_loader.load_data(args.batch_size)
 
         # Instantiate model.
-        if args.model == 'lstm':
+        if (args.model == 'lstm') or (args.model == 'gru'):
             model = RNN(args, data_loader)
+        elif args.model == 'cnn':
+            model = CNN(args, data_loader)
         
         assert model is not None, "Instantiate model!"
 
@@ -152,11 +153,21 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
     logger.info(f'\nRunning on CUDA : {use_cuda}\n')   
 
-    # Train ML Classifier.
-    #ml_trainer = MLTrainer(args, logger)
-    #ml_trainer.train()
+    # Model info.
+    logger.info(f'Model Used : {args.model}.\n')
 
-    train_dl_model(args, logger, device)
+    ## Trainer.
+    if args.model in ML_MODELS:
+        # Train ML Classifier.
+        ml_trainer = MLTrainer(args, logger)
+        ml_trainer.train()
+
+    elif args.model in DL_MODELS:
+        # Train a DL Classifier.
+        train_dl_model(args, logger, device)
+    
+    else:
+        raise AssertionError ("\nThe models should be one of ", MODEL_CHOICES, ".")
 
 
 if __name__=='__main__':
