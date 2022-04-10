@@ -99,7 +99,7 @@ class Trainer():
                 raise ValueError("Unknown lr decay range {}".format(lrd_range))
 
         self.k = k
-        self.model_name = config.model + '_' + str(config.train_type) + '_' + str(self.k)
+        self.model_name = config.model + '_' + str(config.train_type) + '_Fold_' + str(self.k)
         self.file_name = self.model_name + '.pth'
         #self.model_file = os.path.join(config.output_dir, self.file_name)    # MODIFIED.
         self.model_file = path.join(config.output_dir, self.file_name)
