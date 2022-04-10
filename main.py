@@ -50,6 +50,7 @@ def parse_arguments():
     return args
 
 def train_dl_model(args, logger, device):
+
     cache_df = DataFrame(empty((5, 6)), 
                         columns = ['validation loss',
                                     'validation accuracy',
@@ -59,7 +60,7 @@ def train_dl_model(args, logger, device):
                                     'validation roc-auc score']
                         )
 
-
+    logger.info(f'Training Started on {utils.current_timestamp()}.')
     for k in [1]:
         data_loader = Dataloader(args, k, device)
         train_dl, val_dl = data_loader.load_data(args.batch_size)
@@ -80,7 +81,7 @@ def train_dl_model(args, logger, device):
 
     # Save cache for each fold.
     cache_dir = os.makedirs(os.path.join(args.cache_dir, args.model), exist_ok=True)
-    cache_filename = f'Val_preds_{args.model}_{args.train_type}_lr_{args.learning_rate}_{args.epochs}.csv'
+    cache_filename = f'Val_results_{args.model}.csv'
     cache_df.to_csv(os.path.join(cache_dir, cache_filename), index = None)
 
     logger.info("Training Completed!\n")
