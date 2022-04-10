@@ -169,7 +169,7 @@ def current_timestamp():
     date = str(dateTimeObj.year) + '-' + str(dateTimeObj.month) + '-' + str(dateTimeObj.day)
     time = str(dateTimeObj.hour) + ':' + str(dateTimeObj.minute) + ':' + str(dateTimeObj.second)
     
-    return f'{date} || {time}'
+    return f'{date}---{time}'
 
 def timestamp():
     # datetime object containing current date and time
