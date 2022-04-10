@@ -28,7 +28,7 @@ log_dir: ./logs
 
 # TRAIN
 batch_size: 8
-epochs: 80
+epochs: 2
 early_max_patience: 10
 log_interval: 100
 
