@@ -15,11 +15,11 @@ data_filename: ipv
 cache_dir: ./cache_dir 
 
 # EMBEDDINGS
-pretrained: True
+pretrained: true
 emb_dir: ./embeddings
 emb_file: model_fasttext_300d__NNC.bin
 embedding_dim: 300
-embed_finetune: True
+freeze_embedding: true
 
 # OUTPUT_DIR
 output_dir: ./saved_model_dir
