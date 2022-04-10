@@ -13,6 +13,7 @@ import io
 import os
 import logging
 from os.path import exists, join
+from matplotlib import pyplot as plt
 import numpy as np
 from pandas import DataFrame
 import yaml
@@ -240,3 +241,65 @@ def count_parameters(model) -> str:
     '''
     num_par = sum(p.numel() for p in model.parameters() if p.requires_grad)    
     return f'\nThe model has {num_par:,} trainable parameters.'
+
+def visualize_learning(cache_df, save_loc = './images', suffix = 'fold1'):
+    # Loss and Accuracy.
+    plt.figure(figsize = (18,6))
+    plt.style.use('classic')
+
+    plt.subplot(1,2,1)
+    plt.plot(cache_df['training loss'], color = 'tomato', label = 'train')
+    plt.plot(cache_df['validation loss'], color = 'steelblue', label = 'validation')
+    
+    legend = plt.legend(loc = 'best', prop = {"size" : 8})
+    legend.get_frame().set_alpha(None)
+    legend.get_frame().set_facecolor((0, 0, 1, 0.1))
+    
+    plt.xlabel('Epochs')
+    plt.title('Loss curves')
+
+    plt.subplot(1,2,2)
+    plt.plot(cache_df['training accuracy'], color = 'tomato', label = 'train')
+    plt.plot(cache_df['validation accuracy'], color = 'steelblue', label = 'validation')
+
+    legend = plt.legend(loc = 'best', prop = {"size" : 8})
+    legend.get_frame().set_alpha(None)
+    legend.get_frame().set_facecolor((0, 0, 1, 0.1))
+
+    plt.xlabel('Epochs')
+    plt.title('Accuracy')
+
+    ## Save file.
+    file1 = os.path.join(save_loc, f'loss_accuracy_{suffix}.png')
+    plt.savefig(file1)
+    plt.show()
+
+    # Metrics.
+    plt.figure(figsize = (18,6))
+    plt.style.use('classic')
+
+    plt.subplot(1,3,1)
+    plt.plot(cache_df['training precision'], color = 'tomato', label = 'train')
+    plt.plot(cache_df['validation precision'], color = 'steelblue', label = 'validation')
+    plt.legend(loc = 'lower right', prop = {"size" : 8})
+    plt.xlabel('Epochs')
+    plt.title('Precision')
+
+    plt.subplot(1,3,2)
+    plt.plot(cache_df['training recall'], color = 'tomato', label = 'train')
+    plt.plot(cache_df['validation recall'], color = 'steelblue', label = 'validation')
+    plt.legend(loc = 'lower right', prop = {"size" : 8})
+    plt.xlabel('Epochs')
+    plt.title('Recall')
+
+    plt.subplot(1,3,3)
+    plt.plot(cache_df['training f1 score'], color = 'tomato', label = 'train')
+    plt.plot(cache_df['validation f1 score'], color = 'steelblue', label = 'validation')
+    plt.legend(loc = 'lower right', prop = {"size" : 8})
+    plt.xlabel('Epochs')
+    plt.title('F1 Score')
+    
+    ## Save file.
+    file2 = os.path.join(save_loc, f'metrics_{suffix}.png')
+    plt.savefig(file2)
+    plt.show()
