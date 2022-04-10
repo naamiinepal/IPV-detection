@@ -18,7 +18,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 torch.manual_seed(166)
 
-from trainer.evaluator import Evaluator
+from .evaluator import Evaluator
 from utilities.utils import compute_prec_rec_f1
 
 from tqdm import tqdm
@@ -360,7 +360,7 @@ class Trainer():
             if self.config.wandb_config.WandB:
                 wandb.log(log_dict)
             
-            # Best validation loss and accuracy.
+            # Save checkpoint in case of Best validation loss.
             if valid_loss < best_valid_loss:
                 self.save_checkpoint()
                 best_valid_loss = valid_loss
@@ -385,12 +385,14 @@ class Trainer():
             # Train Verbose.
             train_verbose1 = f'Train Loss: {train_loss:.3f} || Train Acc: {train_acc:.3f}\n'
             train_verbose2 = f'Train Precision: {train_pr:.3f} || Train Recall: {train_rec:.3f} || Train F1 Score:{train_f1:.3f} || Train ROC-AUC Score: {train_auc:.3f}\n'
+            
             if self.verbose:
                 self.logger.info(train_verbose1 + train_verbose2)
             
             # Valid verbose.
             valid_verbose1 = f'\nValid Loss: {valid_loss:.3f} || Valid Acc: {valid_acc:.3f}\n'
             valid_verbose2 = f'Valid Precision: {valid_pr:.3f} || Valid Recall: {valid_rec:.3f} || Valid F1 Score:{valid_f1:.3f} || Valid ROC-AUC Score: {valid_auc:.3f}\n'
+            
             if self.verbose:
                 self.logger.info(valid_verbose1 + valid_verbose2)
             
