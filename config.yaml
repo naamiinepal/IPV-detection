@@ -57,6 +57,10 @@ cnn:
     dropout_embed: 0.0
     dropout: 0.5
 
+bert:
+    model_name: 'google/muril-base-cased'    # Choices : ['google/muril-base-cased', 'bert-base-multilingual-cased']
+    
+
 # Vectorizer.
 vectorizer:
     mode: count
