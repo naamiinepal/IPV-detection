@@ -42,7 +42,7 @@ lr_decay_map = {
 
 # Trainer class
 class Trainer():
-    def __init__(self, config, logger, dataloader, model, k):
+    def __init__(self, config, logger, dataloader, model, device, k):
         """
             Trainer class. 
         """        
@@ -64,11 +64,17 @@ class Trainer():
         self.val_dlen = len(self.val_dl)
         #self.test_dlen = len(self.test_dl)
         
-        self.model = model
         self.epochs = config.epochs
-        
-        self.loss_fn = nn.CrossEntropyLoss()
 
+        self.model = model
+        self.loss_fn = nn.CrossEntropyLoss()
+        self.device = device
+
+        # To self.device.
+        self.model = self.model.to(self.device)
+        self.loss_fn = self.loss_fn.to(self.device)
+
+        # Optimizer.
         self.opt = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), 
                                 lr = float(config.learning_rate), 
                                 weight_decay=config.weight_decay)
@@ -198,6 +204,10 @@ class Trainer():
         for coll in iterator:
             X = coll.TEXT
             Y = coll.IPV
+
+            # To device.
+            X = X.to(self.device)
+            Y = Y.to(self.device)
 
             optimizer.zero_grad()
                         

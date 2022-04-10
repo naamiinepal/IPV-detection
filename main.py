@@ -106,7 +106,7 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
         logger.info(utils.count_parameters(model))
 
         # Set up trainer.
-        trainer = Trainer(args, logger, data_loader, model, k)
+        trainer = Trainer(args, logger, data_loader, model, device, k)
         cache = trainer.fit()
         cache_df.iloc[k - 1, :] = cache
 
