@@ -20,14 +20,15 @@ class RNN(nn.Module):
         self.bidirectional = config.rnn.bidirection
         self.num_layers = config.rnn.num_layers
         self.hidden_dim = config.rnn.hidden_dim
-        self.vocab_size = dataloader.vocab_size
-        self.tagset_size = dataloader.tagset_size
         self.embedding_dim = config.embedding_dim
         self.train_type = config.train_type if config.train_type is not None else 'text'
         
+        self.vocab_size = dataloader.vocab_size
+        self.tagset_size = dataloader.tagset_size
+
         # To use: a) Pre-trained Word Embedding b) Parameterized Word Embedding.
         if config.pretrained:
-            self.embedding = nn.Embedding.from_pretrained(dataloader.weights)
+            self.embedding = nn.Embedding.from_pretrained(dataloader.weights, freeze = self.config.freeze_embedding)
         else:
             self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)   
             
@@ -82,20 +83,24 @@ class CNN(nn.Module):
     def __init__(self, config, dataloader):
         super().__init__()
         self.config = config
-        self.hidden_dim = config.hidden_dim
-        self.vocab_size = dataloader.vocab_size
-        self.tagset_size = dataloader.tagset_size
         self.embedding_dim = config.embedding_dim
-        self.train_type = config.train_type
-        self.num_filters = config.num_filters
+        self.train_type = config.train_type if config.train_type is not None else 'text'
+        self.num_filters = config.cnn.num_filters
         
         # Because filter_sizes are passed as string
-        self.filter_sizes = [int(x) for x in config.filter_sizes.split(',')]
+        self.filter_sizes = tuple(map(int, config.cnn.filter_sizes.split(',')))
         
-        self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
+        self.vocab_size = dataloader.vocab_size
+        self.tagset_size = dataloader.tagset_size
+
+        # To use: a) Pre-trained Word Embedding b) Parameterized Word Embedding.
+        if config.pretrained:
+            self.embedding = nn.Embedding.from_pretrained(dataloader.weights, freeze = self.config.freeze_embedding)
+        else:
+            self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)  
         
-        self.ac_size = dataloader.ac_size
-        self.ac_embeddings = nn.Embedding(self.ac_size, self.embedding_dim)
+        #self.ac_size = dataloader.ac_size
+        #self.ac_embeddings = nn.Embedding(self.ac_size, self.embedding_dim)
     
         self.convs = nn.ModuleList([
                                     nn.Conv2d(in_channels = 1, 
@@ -106,28 +111,37 @@ class CNN(nn.Module):
         
         self.fc = nn.Linear(len(self.filter_sizes) * self.num_filters, self.tagset_size)
         
-        self.dropout = nn.Dropout(config.dropout)
+        self.dropout = nn.Dropout(config.cnn.dropout)
         
-    def forward(self, text, at, ac):
+    def forward(self, text):
         
-        #text = [sent len, batch size]      
+        #text = [batch size, seq_len] 
+        # If the length of the sequence is less than the max of the kernel size (i.e max of [2,3,4] ==> 4), we pad the input tensor by 0.
+        seq_len = text.shape[-1]
+        limit = max(self.filter_sizes)
+        if seq_len < limit:
+            pad_sizes = (2,2,0,0) if seq_len == 1 else (1,1,0,0)
+            pad = nn.ZeroPad2d(pad_sizes)      # Size of (left, right, top, bottom) padding.
+            text = pad(text)
+        
+        assert text.shape[-1] >= limit, f"The length of the given sequence is {text.shape[-1]} which is less than the kernel size {limit}."
         
         embedded = self.embedding(text)     # Shape : (batch_size, seq_len, emb_dim)
-        at_emb = self.embedding(at)         # Shape : (batch_size, seq_len, emb_dim)
-        ac_emb = self.ac_embeddings(ac)     # Shape : (batch_size, 1, emb_dim)
+        #at_emb = self.embedding(at)         # Shape : (batch_size, seq_len, emb_dim)
+        #ac_emb = self.ac_embeddings(ac)     # Shape : (batch_size, 1, emb_dim)
         
         
-        if self.train_type == 2:
-            embedded = torch.cat([embedded, ac_emb], dim=1)     # Shape : (batch_size, seq_len + 1, emb_dim)
+        #if self.train_type == 2:
+        #    embedded = torch.cat([embedded, ac_emb], dim=1)     # Shape : (batch_size, seq_len + 1, emb_dim)
         
         # Concatenate text and aspect term
-        elif self.train_type == 3:
-            embedded = torch.cat([embedded, ac_emb], dim=1)
-            embedded = torch.cat((embedded, at_emb), dim=1)
+        #elif self.train_type == 3:
+        #    embedded = torch.cat([embedded, ac_emb], dim=1)
+        #    embedded = torch.cat((embedded, at_emb), dim=1)
         
         #embedded = [batch size, sent len, emb dim]
         
-        embedded = embedded.unsqueeze(1)                        # Shape : (batch_size, 1, seq_len + 1, emb_dim)
+        embedded = embedded.unsqueeze(1)                        # Shape : (batch_size, 1, seq_len, emb_dim)
         
         conved = [F.relu(conv(self.dropout(embedded))).squeeze(3) for conv in self.convs]
         
