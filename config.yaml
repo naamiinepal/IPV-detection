@@ -15,7 +15,7 @@ data_filename: ipv
 cache_dir: ./cache_dir 
 
 # EMBEDDINGS
-pretrained: true
+pretrained: false
 emb_dir: ./embeddings
 emb_file: model_fasttext_300d__NNC.bin
 embedding_dim: 300
@@ -32,7 +32,7 @@ epochs: 50
 log_interval: 100
 
 # OPTIM
-learning_rate: 1e-3
+learning_rate: 1e-2
 weight_decay: 0.000001
 momentum: 0.0
 clip_max_norm_use: False
