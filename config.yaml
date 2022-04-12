@@ -59,7 +59,7 @@ cnn:
 
 bert:
     model_name: 'google/muril-base-cased'    # Choices : ['google/muril-base-cased', 'bert-base-multilingual-cased']
-    
+    unfreeze: false
 
 # Vectorizer.
 vectorizer:
