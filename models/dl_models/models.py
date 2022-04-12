@@ -169,22 +169,29 @@ class BertClassifier_LSTM(nn.Module):
     - output_probabilities = fc_out.argmax(dim = 1) 
     '''
 
-    def __init__(self, BERT_MODEL_NAME, n_layers, bidirectional, hidden_dim, output_dim = 2, dropout=0.5):
+    def __init__(self, config):
 
         super(BertClassifier_LSTM, self).__init__()
-
-        self.bert = BertModel.from_pretrained(BERT_MODEL_NAME)
+        self.config = config
+        self.BERT_MODEL_NAME = self.config.bert.model_name
+        self.n_layers = self.config.rnn.num_layers
+        self.bidirectional = self.config.rnn.bidirection
+        self.hidden_dim = self.config.rnn.hidden_dim
+        self.output_dim = 2
+        self.dropout = self.config.rnn.dropout
+        
+        self.bert = BertModel.from_pretrained(self.BERT_MODEL_NAME)
         self.embedding_dim = self.bert.config.to_dict()['hidden_size']
         
         self.rnn = nn.LSTM(self.embedding_dim,
-                          hidden_dim,
-                          num_layers = n_layers,
-                          bidirectional = bidirectional,
+                          self.hidden_dim,
+                          num_layers = self.n_layers,
+                          bidirectional = self.bidirectional,
                           batch_first = True,
-                          dropout = 0 if n_layers < 2 else dropout)
+                          dropout = 0 if self.n_layers < 2 else self.dropout)
 
-        self.fc = nn.Linear(hidden_dim * 2 if bidirectional else hidden_dim, output_dim)
-        self.dropout = nn.Dropout(dropout)
+        self.fc = nn.Linear(self.hidden_dim * 2 if self.bidirectional else self.hidden_dim, self.output_dim)
+        self.dropout = nn.Dropout(self.dropout)
 
     def forward(self, input_id, mask):
 
