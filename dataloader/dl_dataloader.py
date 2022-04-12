@@ -39,11 +39,20 @@ class Dataloader():
         self.batch_size = args.batch_size
         
         if args.model == 'bert' or args.model == 'muril':
-            self.tokenizer = BertTokenizer.from_pretrained(args.bert.model_name) 
-            self.PAD_INDEX = self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token)
-            self.UNK_INDEX = self.tokenizer.convert_tokens_to_ids(self.tokenizer.unk_token)
+            self.bert_tokenizer = BertTokenizer.from_pretrained(args.bert.model_name) 
+            self.PAD_INDEX = self.bert_tokenizer.convert_tokens_to_ids(self.bert_tokenizer.pad_token)
+            self.UNK_INDEX = self.bert_tokenizer.convert_tokens_to_ids(self.bert_tokenizer.unk_token)
+
+            # Tokenizer function that has input_ids and attention mask.
+            if args.train_type == 'text':
+                self.tokenizer_funct = lambda text: self.bert_tokenizer(text, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+            elif args.train_type == 'atsa':
+                self.tokenizer_funct = lambda text, at: self.bert_tokenizer(text, at, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+            elif args.train_type == 'acsa':
+                self.tokenizer_funct = lambda text, ac: self.bert_tokenizer(text, ac, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+
             self.txt_field = data.Field(use_vocab = False, 
-                                        tokenize = self.tokenizer.encode,
+                                        tokenize = self.tokenizer_funct,
                                         batch_first = True,
                                         pad_token = self.PAD_INDEX,
                                         unk_token = self.UNK_INDEX)
