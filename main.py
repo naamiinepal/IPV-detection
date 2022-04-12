@@ -13,7 +13,7 @@ import torch
 
 # Local Modules.
 from dataloader.dl_dataloader import Dataloader
-from models.dl_models.models import RNN, CNN
+from models.dl_models.models import RNN, CNN, BertClassifier_LSTM
 from trainer.ml_trainer import MLTrainer
 from trainer.dl_trainer import Trainer
 from utilities import utils
@@ -96,7 +96,21 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
             model = RNN(args, data_loader)
         elif args.model == 'cnn':
             model = CNN(args, data_loader)
+
+        elif args.model in ['mbert', 'muril']:
+            model = BertClassifier_LSTM(args)
         
+            # Freeze BERT layers (by default).
+            if not args.bert.unfreeze:
+                for name, param in model.named_parameters():                
+                    if name.startswith('bert'):
+                        param.requires_grad = False
+            else:       
+                # Unfreeze the 11th encoder layer of the transformer.
+                for name, param in model.named_parameters():
+                    if (name.startswith('bert')) and (not name.startswith('bert.encoder.layer.11')):
+                        param.requires_grad = False
+
         assert model is not None, "Instantiate model!"
 
         # Reset model weights to avoid weight leakage.
