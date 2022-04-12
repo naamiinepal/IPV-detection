@@ -47,7 +47,7 @@ def replace_BIO(asp: str, start: bool = True) -> str:
     return asp_bio
 
 
-def convert_to_bio(highlight):
+def convert_to_bio(highlight: list) -> list:
     '''
     Mapping of keywords and aspects of WebAnno TSVv3 to BIO format.
     
