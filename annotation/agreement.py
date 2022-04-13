@@ -135,10 +135,10 @@ class PairwiseAgreement:
         denominator2 = len(a2)
 
         # Precision w.r.t Tag T.
-        prec_t = numerator / denominator1
+        prec_t = numerator / denominator1 if denominator1 > 0 else np.inf
 
         # Recall w.r.t Tag T.
-        rec_t = numerator / denominator2
+        rec_t = numerator / denominator2 if denominator2 > 0 else np.inf
 
         # F1 Measure -> Pairwise Inter-annotator agreement w.r.t Tag T.
         f1 = ((1 + self.beta**2) * prec_t * rec_t) / ((self.beta**2 * prec_t) + rec_t)
