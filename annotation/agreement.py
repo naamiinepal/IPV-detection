@@ -110,7 +110,7 @@ def f1_wrt_category(annot1: pd.DataFrame,
 
     return f1
 
-def calculate_agreement(df1: pd.DataFrame, df2: pd.DataFrame) -> dict:
+def calculate_agreement(df1: pd.DataFrame, df2: pd.DataFrame, type: str = 'token') -> dict:
     """
     Takes in the annotations from both annotators and gives the weighted F1 measure for all the aspect categories involved.
     Steps:
@@ -120,14 +120,20 @@ def calculate_agreement(df1: pd.DataFrame, df2: pd.DataFrame) -> dict:
         - Obtain F1 measure for each category. 
 
     Args:
-        df1 (pd.DataFrame): _description_
-        df2 (pd.DataFrame): _description_
+        df1 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+        df2 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+        type (str, optional): Can be one of {'instance', 'token'}. Defaults to 'token'.
 
     Returns:
-        dict: _description_
+        dict: Python Dictionary Containing Categories as keys and F1 measure as values.
     """    
-    annot1, annot1_ac = preprocess_token_based(df1)
-    annot2, annot2_ac = preprocess_token_based(df2)
+    if type.lower().strip() == 'token':
+        annot1, annot1_ac = preprocess_token_based(df1)
+        annot2, annot2_ac = preprocess_token_based(df2)
+    elif type.lower().strip() == 'instance':
+        annot1, annot1_ac = preprocess_instance_based(df1)
+        annot2, annot2_ac = preprocess_instance_based(df2)
+
 
     # Unique ac values.
     ac_unique = np.union1d(annot1_ac, annot2_ac)
