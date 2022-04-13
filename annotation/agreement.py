@@ -32,6 +32,40 @@ def preprocess_token_based(df: pd.DataFrame):
     annot['ac'] = annot['ac'].apply(lambda x: x[2:])   
     return annot, annot['ac'].unique()
 
+def preprocess_instance_based(df: pd.DataFrame):
+    """
+    Takes in a dataframe containing all the annotations from an annotator and preprocess them.
+    Steps:
+        - Remove rows having "_" in their aspect category column.
+
+    Args:
+        df (pd.DataFrame): Dataframe containing all the annotations from an annotator
+
+    Returns:
+        tuple: DataFrame containing the tokens with their ac values & the unique ac values.
+    """    
+
+    annot = df[['token', 'ac']]
+
+    # Remove rows having "_" in their aspect category column.
+    annot['ac'] = annot['ac'].apply(lambda x: np.nan if x == "_" else x)
+    annot.dropna(inplace = True)
+    annot.reset_index(drop=True, inplace=True)
+
+    # Preprocess.
+    t = list(annot[annot['ac'].str.startswith('B-')].index)
+    store = []
+    for ii, id in enumerate(t):
+        if ii <= len(t) - 2:
+            ac = annot['ac'].iloc[id][2:]
+            index = list(range(id, t[ii+1]))
+            select = " ".join(annot['token'].iloc[index])
+            store.append([select, ac])
+
+    # To DataFrame.
+    annot = pd.DataFrame(store, columns = ['at', 'ac'])
+    return annot, annot['ac'].unique()
+
 def f1_wrt_category(annot1: pd.DataFrame, 
                     annot2: pd.DataFrame, 
                     category: str, 
