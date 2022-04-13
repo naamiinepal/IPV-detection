@@ -7,139 +7,140 @@ Created on Wednesday Apr 13 09:44:35 2022
 import pandas as pd
 import numpy as np
 
-def preprocess_token_based(df: pd.DataFrame):
-    """
-    Takes in a dataframe containing all the annotations from an annotator and preprocess them.
-    Steps:
-        - Remove rows having "_" in their aspect category column.
-        - Remove B- and I- prefixes from the category.
+class PairwiseAgreement:
+    def __init__(self, df1: pd.DataFrame, df2: pd.DataFrame, type: str, beta: float = 1.0) -> None:
+        """
+        Pairwise Inter-annotator agreement using Weighted F-measure.
 
-    Args:
-        df (pd.DataFrame): Dataframe containing all the annotations from an annotator
+        Args:
+            df1 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+            df2 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+            type (str, optional): Can be one of {'instance', 'token'}. Defaults to 'token'.
+            beta (float, optional): Weights given to Precision. Defaults to 1.0.
+        """        
+        self.df1 = df1
+        self.df2 = df2
+        self.type = type
+        self.beta = beta
 
-    Returns:
-        tuple: DataFrame containing the tokens with their ac values & the unique ac values.
-    """    
+    def calculate_agreement(self) -> dict:
+        """
+        Takes in the annotations from both annotators and gives the weighted F1 measure for all the aspect categories involved.
+        Steps:
+            - Preprocess the initial aspect category.
+            - Obtain unique ac from both dfs.
+            - Take union.
+            - Obtain F1 measure for each category. 
 
-    annot = df[['token', 'ac']]
+        Args:
+            df1 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+            df2 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
+            type (str, optional): Can be one of {'instance', 'token'}. Defaults to 'token'.
 
-    # Remove rows having "_" in their aspect category column.
-    annot['ac'] = annot['ac'].apply(lambda x: np.nan if x == "_" else x)
-    annot.dropna(inplace = True)
-    annot.reset_index(drop=True, inplace=True)
+        Returns:
+            dict: Python Dictionary Containing Categories as keys and F1 measure as values.
+        """    
+        
+        # Preprocessing step.
+        annot1, annot1_ac = self._preprocess_tokens(self.df1, type = self.type)
+        annot2, annot2_ac = self._preprocess_tokens(self.df2, type = self.type)
 
-    # Removing B and I prefix.
-    annot['ac'] = annot['ac'].apply(lambda x: x[2:])   
-    return annot, annot['ac'].unique()
+        # Unique ac values.
+        ac_unique = np.union1d(annot1_ac, annot2_ac)
 
-def preprocess_instance_based(df: pd.DataFrame):
-    """
-    Takes in a dataframe containing all the annotations from an annotator and preprocess them.
-    Steps:
-        - Remove rows having "_" in their aspect category column.
+        # Compute the F1 measure for each category and store them in a dictionary.    
+        coll = {category : self.f1_wrt_category(annot1, annot2, category, beta=1.0) 
+                for category in ac_unique}
+        
+        return coll
 
-    Args:
-        df (pd.DataFrame): Dataframe containing all the annotations from an annotator
+    def _preprocess_tokens(self, df: pd.DataFrame, type: str):
+        """
+        Takes in a dataframe containing all the annotations from an annotator and preprocess them.
+        Steps:
+            - Remove rows having "_" in their aspect category column.
+            - If token based matching:
+                - Remove B- and I- prefixes from the category.
+            - Else if instance based matching:
+                - Accumulate the tokens having B and I prefixes into a single string.
+            - Return Tuple.
 
-    Returns:
-        tuple: DataFrame containing the tokens with their ac values & the unique ac values.
-    """    
+        Args:
+            df (pd.DataFrame): Dataframe containing all the annotations from an annotator
 
-    annot = df[['token', 'ac']]
+        Returns:
+            tuple: DataFrame containing the tokens with their ac values & the unique ac values.
+        """    
+        assert type in ['token', 'instance'], "Type should be one of {'token', 'instance'}."
 
-    # Remove rows having "_" in their aspect category column.
-    annot['ac'] = annot['ac'].apply(lambda x: np.nan if x == "_" else x)
-    annot.dropna(inplace = True)
-    annot.reset_index(drop=True, inplace=True)
+        annot = df[['token', 'ac']]
 
-    # Preprocess.
-    t = list(annot[annot['ac'].str.startswith('B-')].index)
-    store = []
-    for ii, id in enumerate(t):
-        if ii <= len(t) - 2:
-            ac = annot['ac'].iloc[id][2:]
-            index = list(range(id, t[ii+1]))
-            select = " ".join(annot['token'].iloc[index])
-            store.append([select, ac])
+        # Remove rows having "_" in their aspect category column.
+        annot['ac'] = annot['ac'].apply(lambda x: np.nan if x == "_" else x)
+        annot.dropna(inplace = True)
+        annot.reset_index(drop=True, inplace=True)
 
-    # To DataFrame.
-    annot = pd.DataFrame(store, columns = ['at', 'ac'])
-    return annot, annot['ac'].unique()
+        if type == 'token':
+            # Removing B and I prefix.
+            annot['ac'] = annot['ac'].apply(lambda x: x[2:])   
+        
+        else:
+            # Accumulate the B and I tokens into a single string.
+            t = list(annot[annot['ac'].str.startswith('B-')].index)
+            store = []
+            for ii, id in enumerate(t):
+                if ii <= len(t) - 2:
+                    ac = annot['ac'].iloc[id][2:]
+                    index = list(range(id, t[ii+1]))
+                    select = " ".join(annot['token'].iloc[index])
+                    store.append([select, ac])
 
-def f1_wrt_category(annot1: pd.DataFrame, 
-                    annot2: pd.DataFrame, 
-                    category: str, 
-                    beta: float = 1.0) -> float:
-    """
-    Calculate pairwise agreement for a category using weighted F1 measure.
-
-    Args:
-        annot1 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
-        annot2 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
-        category (str): Aspect category w.r.t which the F1 measure is to be computed.
-        beta (float, optional): Weights given to Precision. Defaults to 1.0.
-
-    Returns:
-        float: F1 Measure representing the pairwise agreement.
-    """    
-    assert category in annot1.ac.unique() and category in annot2.ac.unique()
-
-    ## The tokens which are labelled as, say, 'profanity' by annotator A.
-    a1 = annot1[annot1['ac'] == category]['token'].values
-
-    ## The tokens which are labelled as, say, 'profanity' by annotator B.
-    a2 = annot2[annot2['ac'] == category]['token'].values
-
-    # Numerator.
-    numerator = np.intersect1d(a1, a2).__len__()
-
-    # Denomintor 1 -> Number of Tokens Annotator 1 tagged 'profanity'.
-    denominator1 = len(a1)
-
-    # Denomintor 2 -> Number of Tokens Annotator 2 tagged 'profanity'.
-    denominator2 = len(a2)
-
-    # Precision w.r.t Tag T.
-    prec_t = numerator / denominator1
-
-    # Recall w.r.t Tag T.
-    rec_t = numerator / denominator2
-
-    # F1 Measure -> Pairwise Inter-annotator agreement w.r.t Tag T.
-    f1 = (2 * prec_t * rec_t) / (prec_t + rec_t)
-
-    return f1
-
-def calculate_agreement(df1: pd.DataFrame, df2: pd.DataFrame, type: str = 'token') -> dict:
-    """
-    Takes in the annotations from both annotators and gives the weighted F1 measure for all the aspect categories involved.
-    Steps:
-        - Preprocess the initial aspect category.
-        - Obtain unique ac from both dfs.
-        - Take union.
-        - Obtain F1 measure for each category. 
-
-    Args:
-        df1 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
-        df2 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
-        type (str, optional): Can be one of {'instance', 'token'}. Defaults to 'token'.
-
-    Returns:
-        dict: Python Dictionary Containing Categories as keys and F1 measure as values.
-    """    
-    if type.lower().strip() == 'token':
-        annot1, annot1_ac = preprocess_token_based(df1)
-        annot2, annot2_ac = preprocess_token_based(df2)
-    elif type.lower().strip() == 'instance':
-        annot1, annot1_ac = preprocess_instance_based(df1)
-        annot2, annot2_ac = preprocess_instance_based(df2)
+            # To DataFrame.
+            annot = pd.DataFrame(store, columns = ['at', 'ac'])
+        
+        return annot, annot['ac'].unique()
 
 
-    # Unique ac values.
-    ac_unique = np.union1d(annot1_ac, annot2_ac)
+    def f1_wrt_category(self,
+                        annot1: pd.DataFrame, 
+                        annot2: pd.DataFrame, 
+                        category: str
+                       ) -> float:
+        """
+        Calculate pairwise agreement for a category using weighted F1 measure.
 
-    # Compute the F1 measure for each category and store them in a dictionary.    
-    coll = {category : f1_wrt_category(annot1, annot2, category, beta=1.0) 
-            for category in ac_unique}
-    
-    return coll
+        Args:
+            annot1 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
+            annot2 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
+            category (str): Aspect category w.r.t which the F1 measure is to be computed.
+
+        Returns:
+            float: F1 Measure representing the pairwise agreement.
+        """    
+        assert category in annot1.ac.unique() and category in annot2.ac.unique()
+
+        ## The tokens which are labelled as, say, 'profanity' by annotator A.
+        a1 = annot1[annot1['ac'] == category]['token'].values
+
+        ## The tokens which are labelled as, say, 'profanity' by annotator B.
+        a2 = annot2[annot2['ac'] == category]['token'].values
+
+        # Numerator.
+        numerator = np.intersect1d(a1, a2).__len__()
+
+        # Denomintor 1 -> Number of Tokens Annotator 1 tagged 'profanity'.
+        denominator1 = len(a1)
+
+        # Denomintor 2 -> Number of Tokens Annotator 2 tagged 'profanity'.
+        denominator2 = len(a2)
+
+        # Precision w.r.t Tag T.
+        prec_t = numerator / denominator1
+
+        # Recall w.r.t Tag T.
+        rec_t = numerator / denominator2
+
+        # F1 Measure -> Pairwise Inter-annotator agreement w.r.t Tag T.
+        f1 = ((1 + self.beta**2) * prec_t * rec_t) / ((self.beta**2 * prec_t) + rec_t)
+
+        return f1
