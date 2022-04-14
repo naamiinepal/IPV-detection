@@ -213,8 +213,10 @@ class Trainer():
 
             # To device.
             if self.config.model in ['mbert', 'muril']:
-                mask = X['attention_mask'].to(self.device)
-                X = X['input_ids'].to(self.device)
+                # Create an attention mask.
+                mask = (X > 0).to(int)
+                mask = mask.to(self.device)
+                X = X.to(self.device)
             else:
                 X = X.to(self.device)
                 Y = Y.to(self.device)
