@@ -44,7 +44,7 @@ def parse_arguments():
     '''
     parser = argparse.ArgumentParser(description="Online IPV Detection argument parser.")
 
-    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'cnn',
+    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'muril',
                         help = f'Type of model to run.\nShould be one of {MODEL_CHOICES}.')
     parser.add_argument('-t', '--train_type', choices = ['text', 'atsa', 'acsa', 'concat'], default = 'text',
                         help = 'Type of training: Should be one of {"text : text only", "atsa : text + at", "acsa : text + ac", "concat : text + at + ac"}.')
