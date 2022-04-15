@@ -9,6 +9,7 @@ Description:
 """
 
 
+from transformers import AdamW
 import wandb
 from os import path, mkdir, makedirs
 from pandas import DataFrame
@@ -49,7 +50,7 @@ class Trainer():
         self.config = config
         self.logger = logger
         self.dataloader = dataloader
-        self.verbose = config.verbose
+        self.verbose = self.config.verbose
 
         self.train_dl, self.val_dl = dataloader.load_data(batch_size=config.batch_size)
 
@@ -64,28 +65,33 @@ class Trainer():
         self.val_dlen = len(self.val_dl)
         #self.test_dlen = len(self.test_dl)
         
-        self.epochs = config.epochs
+        self.epochs = self.config.epochs
 
         self.model = model
         self.loss_fn = nn.CrossEntropyLoss()
         self.device = device
 
-        # To self.device.
+        # To device.
         self.model = self.model.to(self.device)
         self.loss_fn = self.loss_fn.to(self.device)
 
         # Optimizer.
-        self.opt = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), 
-                                lr = float(config.learning_rate), 
-                                weight_decay=config.weight_decay)
+        if self.config.model in ['mbert', 'muril']:
+            self.opt = AdamW(filter(lambda p: p.requires_grad, self.model.parameters()), 
+                            lr = float(self.config.learning_rate), 
+                            weight_decay = self.config.weight_decay)
+        else:
+            self.opt = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), 
+                                    lr = float(self.config.learning_rate), 
+                                    weight_decay=self.config.weight_decay)
         
         self.lr_scheduler_step = self.lr_scheduler_epoch = None
         
         # Set up learing rate decay scheme.
-        if config.use_lr_decay:
-            if '_' not in config.lr_rate_decay:
+        if self.config.use_lr_decay:
+            if '_' not in self.config.lr_rate_decay:
                 raise ValueError("Malformed learning_rate_decay")
-            lrd_scheme, lrd_range = config.lr_rate_decay.split('_')
+            lrd_scheme, lrd_range = self.config.lr_rate_decay.split('_')
 
             if lrd_scheme not in lr_decay_map:
                 raise ValueError("Unknown lr decay scheme {}".format(lrd_scheme))
@@ -93,7 +99,7 @@ class Trainer():
             lrd_func = lr_decay_map[lrd_scheme]            
             lr_scheduler = optim.lr_scheduler.LambdaLR(
                                             self.opt, 
-                                            lrd_func(config),
+                                            lrd_func(self.config),
                                             last_epoch=-1
                                         )
             # For each scheme, decay can happen every step or every epoch
@@ -105,17 +111,17 @@ class Trainer():
                 raise ValueError("Unknown lr decay range {}".format(lrd_range))
 
         self.k = k
-        self.model_name = f'{config.model}_{config.train_type}_{config.learning_rate}_Fold_{self.k}'
+        self.model_name = f'{self.config.model}_{self.config.train_type}_{self.config.learning_rate}_Fold_{self.k}'
         self.file_name = self.model_name + '.pth'
-        makedirs(path.join(config.output_dir, config.model), exist_ok = True)
-        self.model_file = path.join(config.output_dir, config.model, self.file_name)
+        makedirs(path.join(self.config.output_dir, self.config.model), exist_ok = True)
+        self.model_file = path.join(self.config.output_dir, self.config.model, self.file_name)
         
         self.total_train_loss = []
         self.total_train_acc = []
         self.total_val_loss = []
         self.total_val_acc = []
         
-        self.early_max_patience = config.early_max_patience
+        self.early_max_patience = self.config.early_max_patience
         
     # Load saved model
     def load_checkpoint(self):
@@ -206,15 +212,21 @@ class Trainer():
             Y = coll.IPV
 
             # To device.
-            X = X.to(self.device)
-            Y = Y.to(self.device)
+            if self.config.model in ['mbert', 'muril']:
+                # Create an attention mask.
+                mask = (X > 0).to(int)
+                mask = mask.to(self.device)
+                X = X.to(self.device)
+            else:
+                X = X.to(self.device)
+                Y = Y.to(self.device)
 
             optimizer.zero_grad()
                         
-            predictions = model(X)              # Shape -> (batch_size, 2)
+            predictions = model(X, mask) if self.config.model in ['mbert', 'muril'] else model(X)         # Shape -> (batch_size, 2)
             gold = Y
 
-            gold = gold.squeeze(1)                      # Shape -> (batch_size)
+            gold = gold.squeeze(1) if len(gold.shape) > 1 else gold                    # Shape -> (batch_size)
 
             loss = criterion(predictions, gold)
             
@@ -274,11 +286,21 @@ class Trainer():
                 X = coll.TEXT
                 Y = coll.IPV
 
-                predictions = model(X)           # Shape -> (batch_size, 2)
+                # To device.
+                if self.config.model in ['mbert', 'muril']:
+                    # Create an attention mask.
+                    mask = (X > 0).to(int)
+                    mask = mask.to(self.device)
+                    X = X.to(self.device)
+                else:
+                    X = X.to(self.device)
+                    Y = Y.to(self.device)
+
+                predictions = model(X, mask) if self.config.model in ['mbert', 'muril'] else model(X)          # Shape -> (batch_size, 2)
                 gold = Y                         # Shape -> (batch_size, 1)
                 
                 # True label.
-                gold = gold.squeeze(1)              # Shape -> (batch_size)                        
+                gold = gold.squeeze(1) if len(gold.shape) > 1 else gold            # Shape -> (batch_size)                        
                 gold_label.append(gold.data.cpu().numpy().tolist())
 
                 # Calculate loss.

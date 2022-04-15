@@ -222,12 +222,12 @@ def reset_weights(m):
     None.
 
     '''
-    for layer in m.children():
-        if hasattr(layer, 'reset_parameters'):
+    for name, layer in m.named_children():
+        if not name.startswith('bert') and hasattr(layer, 'reset_parameters'):
             print(f'Resetting trainable parameters of layer = {layer}')
             layer.reset_parameters()
             print('Successful!\n')
-
+            
 def count_parameters(model) -> str:
     '''
     Counts the number of trainable parameters.

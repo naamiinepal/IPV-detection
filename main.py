@@ -13,7 +13,7 @@ import torch
 
 # Local Modules.
 from dataloader.dl_dataloader import Dataloader
-from models.dl_models.models import RNN, CNN
+from models.dl_models.models import RNN, CNN, BertClassifier_LSTM
 from trainer.ml_trainer import MLTrainer
 from trainer.dl_trainer import Trainer
 from utilities import utils
@@ -44,7 +44,7 @@ def parse_arguments():
     '''
     parser = argparse.ArgumentParser(description="Online IPV Detection argument parser.")
 
-    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'cnn',
+    parser.add_argument('-m', '--model', choices = MODEL_CHOICES,  default = 'muril',
                         help = f'Type of model to run.\nShould be one of {MODEL_CHOICES}.')
     parser.add_argument('-t', '--train_type', choices = ['text', 'atsa', 'acsa', 'concat'], default = 'text',
                         help = 'Type of training: Should be one of {"text : text only", "atsa : text + at", "acsa : text + ac", "concat : text + at + ac"}.')
@@ -96,7 +96,21 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
             model = RNN(args, data_loader)
         elif args.model == 'cnn':
             model = CNN(args, data_loader)
+
+        elif args.model in ['mbert', 'muril']:
+            model = BertClassifier_LSTM(args)
         
+            # Freeze BERT layers (by default).
+            if not args.bert.unfreeze:
+                for name, param in model.named_parameters():                
+                    if name.startswith('bert'):
+                        param.requires_grad = False
+            else:       
+                # Unfreeze the 11th encoder layer of the transformer.
+                for name, param in model.named_parameters():
+                    if (name.startswith('bert')) and (not name.startswith('bert.encoder.layer.11')):
+                        param.requires_grad = False
+
         assert model is not None, "Instantiate model!"
 
         # Reset model weights to avoid weight leakage.

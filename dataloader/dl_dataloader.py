@@ -12,6 +12,7 @@ import torch
 from torchtext.legacy import data
 from torchtext import vocab
 from torchtext import datasets
+from transformers import BertTokenizer
 
 # Local modules.
 from utilities.read_configuration import DotDict
@@ -37,8 +38,37 @@ class Dataloader():
         self.data_path = os.path.join(args.data_path, str(k))
         self.batch_size = args.batch_size
         
-        self.txt_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
-        self.ipv_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
+        if args.model == 'bert' or args.model == 'muril':
+            self.bert_tokenizer = BertTokenizer.from_pretrained(args.bert.model_name) 
+            self.PAD_INDEX = self.bert_tokenizer.pad_token
+            self.CLS_INDEX = self.bert_tokenizer.cls_token
+            self.UNK_INDEX = self.bert_tokenizer.unk_token
+
+            # Tokenizer function that has input_ids and attention mask.
+            if args.train_type == 'text':
+                self.tokenizer_funct = lambda text: self.bert_tokenizer(text, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+            elif args.train_type == 'atsa':
+                self.tokenizer_funct = lambda text, at: self.bert_tokenizer(text, at, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+            elif args.train_type == 'acsa':
+                self.tokenizer_funct = lambda text, ac: self.bert_tokenizer(text, ac, padding="max_length", max_length = 512, truncation=True, return_tensors = "pt")
+
+            self.txt_field = data.Field(sequential = True,
+                                        tokenize = self.bert_tokenizer.tokenize,
+                                        batch_first = True,
+                                        pad_token = self.PAD_INDEX,
+                                        init_token = self.CLS_INDEX,
+                                        unk_token = self.UNK_INDEX)
+        else:
+            self.txt_field = data.Field(tokenize = self.tokenizer, use_vocab = True, unk_token = '<unk>', batch_first = True)
+
+        self.ipv_field = data.Field(batch_first=True, 
+                                    is_target = True,
+                                    unk_token=None, 
+                                    pad_token=None, 
+                                    use_vocab = False, 
+                                    sequential = False 
+                                    )
+
         #self.id_field = data.Field(unk_token='<unk>', batch_first=True)
         #self.at_field = data.Field(tokenize=self.tokenizer, use_vocab=True, unk_token='<unk>', batch_first=True)
         #self.ac_field = data.Field(batch_first=True, unk_token=None, pad_token=None)
@@ -46,7 +76,7 @@ class Dataloader():
         #self.fields = (('IPV', self.ipv_field), ('ASPECT', self.ac_field), 
         #               ('TERM', self.at_field), ('TEXT', self.txt_field))            
 
-        self.fields = ((None, None), ('TEXT', self.txt_field), ('IPV', self.ipv_field))
+        self.fields = ((None, None), ('TEXT', self.txt_field), ('IPV', self.ipv_field))          # THIS WILL BE MODIFIED AFTER ASPECT TERMS AND CATEGORIES ARE ADDED.
 
         self.train_ds, self.val_ds = data.TabularDataset.splits(path=self.data_path, 
                                                                 format='csv', 
@@ -57,12 +87,19 @@ class Dataloader():
         self.embedding_dir = args.emb_dir
         self.vec = vocab.Vectors(name=args.emb_file, cache=self.embedding_dir)
 
-        self.txt_field.build_vocab(self.train_ds.TEXT, self.val_ds.TEXT, max_size=None, vectors=self.vec)
+        if args.model == 'bert' or args.model == 'muril':
+            self.txt_field.build_vocab(self.train_ds.TEXT)
+            self.txt_field.vocab.stoi = self.bert_tokenizer.vocab
+            self.txt_field.vocab.itos = list(self.bert_tokenizer.vocab)
+            
+        else:
+            self.txt_field.build_vocab(self.train_ds.TEXT, self.val_ds.TEXT, max_size=None, vectors=self.vec)
+        
         #self.at_field.build_vocab(self.train_ds.TERM, self.val_ds.TERM, max_size=None, vectors=self.vec)
         #self.ac_field.build_vocab(self.train_ds.ASPECT)
         #self.id_field.build_vocab(self.train_ds.ID)
         self.ipv_field.build_vocab(self.train_ds.IPV)
-                    
+        
         self.vocab_size = len(self.txt_field.vocab)
         #self.at_size = len(self.at_field.vocab)
         #self.ac_size = len(self.ac_field.vocab)
@@ -121,7 +158,7 @@ class Dataloader():
         print('Length of label vocab (unique tags in labels) = ', self.tagset_size)
         print()
     
-    def load_data(self, batch_size: int, shuffle = False):
+    def load_data(self, batch_size: int, shuffle: bool = False):
         '''
         Generates the data iterators for train, validation and test data.
 
