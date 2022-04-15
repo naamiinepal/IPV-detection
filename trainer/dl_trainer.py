@@ -226,7 +226,7 @@ class Trainer():
             predictions = model(X, mask) if self.config.model in ['mbert', 'muril'] else model(X)         # Shape -> (batch_size, 2)
             gold = Y
 
-            gold = gold.squeeze(1)                      # Shape -> (batch_size)
+            gold = gold.squeeze(1) if len(gold.shape) > 1 else gold                    # Shape -> (batch_size)
 
             loss = criterion(predictions, gold)
             
@@ -286,11 +286,21 @@ class Trainer():
                 X = coll.TEXT
                 Y = coll.IPV
 
-                predictions = model(X)           # Shape -> (batch_size, 2)
+                # To device.
+                if self.config.model in ['mbert', 'muril']:
+                    # Create an attention mask.
+                    mask = (X > 0).to(int)
+                    mask = mask.to(self.device)
+                    X = X.to(self.device)
+                else:
+                    X = X.to(self.device)
+                    Y = Y.to(self.device)
+
+                predictions = model(X, mask) if self.config.model in ['mbert', 'muril'] else model(X)          # Shape -> (batch_size, 2)
                 gold = Y                         # Shape -> (batch_size, 1)
                 
                 # True label.
-                gold = gold.squeeze(1)              # Shape -> (batch_size)                        
+                gold = gold.squeeze(1) if len(gold.shape) > 1 else gold            # Shape -> (batch_size)                        
                 gold_label.append(gold.data.cpu().numpy().tolist())
 
                 # Calculate loss.
