@@ -23,10 +23,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description = "Visualization of Learning curves.")
     
     parser.add_argument('-i', '--source', 
-                        type = str, metavar='PATH', default = r'cache_dir/lstm',
+                        type = str, metavar='PATH', default = r'cache_dir/mbert',
                         help = 'Path to the folder containing cache files.')
     parser.add_argument('-o', '--target', 
-                        type = str, metavar='PATH', default = r'./images/lstm_trial',
+                        type = str, metavar='PATH', default = r'./images/mbert_trial',
                         help = 'Path to the folder to store the images.')
     parser.add_argument('-t', '--plot_bar', action = 'store_true', 
                         help = 'Whether to display results in a bar chart.')
@@ -49,9 +49,7 @@ def main(args):
     target = args.target
     source = args.source
 
-    # If the target folder doesn't exist, create one.
-    if not os.path.exists(target):
-        os.mkdir(target)
+    os.makedirs(target, exist_ok = True)
 
     # Accumulate every filename that starts with 'cache'.
     filenames = [os.path.join(source, file) for file in os.listdir(source) if file.startswith('cache')]
@@ -68,7 +66,7 @@ def main(args):
         df.drop(df[df['training loss'] < 1e-6].index, inplace = True)
         visualize_learning(df, save_loc = target, suffix = fold)
     
-    if args.plot_test:
+    """ if args.plot_test:
         # Test results.
         # Test filenames.
         test_filenames = [os.path.join(source, file) for file in os.listdir(source) if file.startswith('test')]
@@ -116,7 +114,7 @@ def main(args):
         df = df.append(df.mean(), ignore_index = True)
         df = df.round(3)
         df.index = ['Fold ' + str(ii + 1) for ii in range(len(df) - 1)] + ['Average']
-        df.to_csv(os.path.join(source, 'Aggregated Test Results.csv'))
+        df.to_csv(os.path.join(source, 'Aggregated Test Results.csv')) """
     
     
     
