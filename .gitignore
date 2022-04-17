@@ -1,0 +1,13 @@
+__pycache__/
+.spyproject/
+
+*.bin
+*.pth
+*.xlsx
+*.log
+
+cache_dir/
+saved_model_dir/
+embeddings/
+annotation/data/
+images/
