@@ -28,12 +28,12 @@ log_dir: ./logs
 
 # TRAIN
 batch_size: 8
-epochs: 50
+epochs: 80
 log_interval: 100
 
 # OPTIM
-learning_rate: 0.05
-weight_decay: 0.000001
+learning_rate: 1e-1
+weight_decay: 0.00001
 momentum: 0.0
 clip_max_norm_use: False
 clip_max_norm: None
@@ -46,10 +46,10 @@ early_max_patience: 8
 # MODELs.
 rnn:
     bidirection: true
-    num_layers: 1
+    num_layers: 2
     hidden_dim: 256
     dropout_embed: 0.0
-    dropout: 0.5
+    dropout: 0.1
 
 cnn:
     num_filters: 100
