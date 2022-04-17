@@ -272,7 +272,6 @@ def visualize_learning(cache_df, save_loc = './images', suffix = 'fold1'):
     ## Save file.
     file1 = os.path.join(save_loc, f'loss_accuracy_{suffix}.png')
     plt.savefig(file1)
-    plt.show()
 
     # Metrics.
     plt.figure(figsize = (18,6))
@@ -302,4 +301,3 @@ def visualize_learning(cache_df, save_loc = './images', suffix = 'fold1'):
     ## Save file.
     file2 = os.path.join(save_loc, f'metrics_{suffix}.png')
     plt.savefig(file2)
-    plt.show()
