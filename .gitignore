@@ -10,3 +10,4 @@ cache_dir/
 saved_model_dir/
 embeddings/
 annotation/data/
+images/
