@@ -4,8 +4,12 @@ Created on Wednesday Apr 13 09:44:35 2022
 
 @author: Sagun Shakya
 """
+#%%
 import pandas as pd
 import numpy as np
+
+from warnings import filterwarnings
+filterwarnings('ignore')
 
 class PairwiseAgreement:
     def __init__(self, df1: pd.DataFrame, df2: pd.DataFrame, type: str, beta: float = 1.0) -> None:
@@ -16,7 +20,7 @@ class PairwiseAgreement:
             df1 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
             df2 (pd.DataFrame): DataFrame containing all annotations from Annotator 1.
             type (str, optional): Can be one of {'instance', 'token'}. Defaults to 'token'.
-            beta (float, optional): Weights given to Precision. Defaults to 1.0.
+            beta (float, optional): Weight given to Precision. Defaults to 1.0.
         """        
         self.df1 = df1
         self.df2 = df2
@@ -49,7 +53,7 @@ class PairwiseAgreement:
         ac_unique = np.union1d(annot1_ac, annot2_ac)
 
         # Compute the F1 measure for each category and store them in a dictionary.    
-        coll = {category : self.f1_wrt_category(annot1, annot2, category, beta=1.0) 
+        coll = {category : self.f1_wrt_category(annot1, annot2, category) 
                 for category in ac_unique}
         
         return coll
@@ -111,13 +115,13 @@ class PairwiseAgreement:
 
         Args:
             annot1 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
-            annot2 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 1.
+            annot2 (pd.DataFrame): DataFrame Containing the tokens and their categories annotated by annotator 2.
             category (str): Aspect category w.r.t which the F1 measure is to be computed.
 
         Returns:
             float: F1 Measure representing the pairwise agreement.
         """    
-        assert category in annot1.ac.unique() and category in annot2.ac.unique()
+        # assert category in annot1.ac.unique() and category in annot2.ac.unique(), f'The category {category} does not exist in either of the annotations.'
 
         ## The tokens which are labelled as, say, 'profanity' by annotator A.
         a1 = annot1[annot1['ac'] == category]['token'].values
@@ -144,3 +148,4 @@ class PairwiseAgreement:
         f1 = ((1 + self.beta**2) * prec_t * rec_t) / ((self.beta**2 * prec_t) + rec_t)
 
         return f1
+
