@@ -59,9 +59,10 @@ def parse_file(filename: str) -> pd.DataFrame:
 
     # Replace "\\_" with "_" in ac.
     df['ac'] = df['ac'].apply(lambda x: x.replace('\\_', '_'))
-
+    df['ac'] = df['ac'].apply(lambda x: '_' if (x =='B-*') or (x == 'I-*') else x)
     # Fixing aspect polarity.
     df['ap'] = df['ap'].apply(lambda x: x[0] if x != '_' else x)
+    df['ap'] = df['ap'].apply(lambda x: '_' if x == '*' else x)
 
     return df
 
