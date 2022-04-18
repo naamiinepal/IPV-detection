@@ -50,7 +50,7 @@ class PairwiseAgreement:
         annot2, annot2_ac = self._preprocess_tokens(self.df2, type = self.type)
 
         # Unique ac values.
-        ac_unique = np.union1d(annot1_ac, annot2_ac)
+        ac_unique = np.intersect1d(annot1_ac, annot2_ac)
 
         # Compute the F1 measure for each category and store them in a dictionary.    
         coll = {category : self.f1_wrt_category(annot1, annot2, category) 
@@ -100,7 +100,7 @@ class PairwiseAgreement:
                     store.append([select, ac])
 
             # To DataFrame.
-            annot = pd.DataFrame(store, columns = ['at', 'ac'])
+            annot = pd.DataFrame(store, columns = ['token', 'ac'])
         
         return annot, annot['ac'].unique()
 
@@ -145,7 +145,7 @@ class PairwiseAgreement:
         rec_t = numerator / denominator2 if denominator2 > 0 else np.inf
 
         # F1 Measure -> Pairwise Inter-annotator agreement w.r.t Tag T.
-        f1 = ((1 + self.beta**2) * prec_t * rec_t) / ((self.beta**2 * prec_t) + rec_t)
+        f1 = ((1 + self.beta**2) * prec_t * rec_t) / ((self.beta**2 * prec_t) + rec_t) if prec_t > 0 and rec_t > 0 else 0.0
 
         return f1
 
