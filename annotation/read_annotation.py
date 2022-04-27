@@ -89,7 +89,7 @@ def get_processed_data(shr_root: str, krn_root: str, get_common: bool = True) ->
     Returns:
         pd.DataFrame: DataFrame containing seven fields, namely, {s_no, str_id, token, ac, ap, conf, ipv}.
     """    
-    
+
     # Get the filenames of the exports in both directories.
     shr_files = os.listdir(shr_root)
     krn_files = os.listdir(krn_root)
@@ -97,14 +97,6 @@ def get_processed_data(shr_root: str, krn_root: str, get_common: bool = True) ->
     # Make sure that the directory is not empty.
     assert len(shr_files) > 1, "The directory shr is empty."
     assert len(krn_files) > 1, "The directory krn is empty."
-    
-
-    # For getting dataframes.
-    shr_filenames = [os.path.join(shr_root, file) for file in shr_files]
-    krn_filenames = [os.path.join(krn_root, file) for file in krn_files]
-
-    df_shr = merge_annotations(shr_filenames)
-    df_krn = merge_annotations(krn_filenames)
 
     # For interannotator agreement.
     if get_common:
@@ -119,7 +111,14 @@ def get_processed_data(shr_root: str, krn_root: str, get_common: bool = True) ->
         df_shr_common = merge_annotations(shr_target_filenames)
         df_krn_common = merge_annotations(krn_target_filenames)
 
-        results = df_shr, df_krn, df_shr_common, df_krn_common
-        return results
+        return df_shr_common, df_krn_common
+
+    # For getting dataframes.
+    shr_filenames = [os.path.join(shr_root, file) for file in shr_files]
+    krn_filenames = [os.path.join(krn_root, file) for file in krn_files]
+
+    # Merge annotations for both.
+    df_shr = merge_annotations(shr_filenames)
+    df_krn = merge_annotations(krn_filenames)
 
     return df_shr, df_krn
