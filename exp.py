@@ -1,31 +1,40 @@
 import numpy as np
 import os
 from os.path import join
+
+from pandas import DataFrame
 from annotation.read_annotation import *
 from annotation.agreement import PairwiseAgreement
 
-def get_processed_data():
-    # Done by Sharmila.
-    shr_root = r'D:\ML_projects\IPV-Project\annotation\data\ipv\Sharmila'
-    #krn_verified = r'D:\ML_projects\IPV-Project\annotation\data\CROSS\Kiran Cross checked files'
+# Constants.
+root = r'D:\ML_projects\IPV-Project\annotation\data\first_lot\non-ipv'
+
+# Done by Sharmila.
+shr_root = join(root, 'shr')
+# Done by Kiran.
+krn_root = join(root, 'krn')
+
+def get_processed_data(shr_root: str, krn_root: str) -> DataFrame:
+
+    # Get the filenames of the exports in both directories.
+    shr_files = os.listdir(shr_root)
+    krn_files = os.listdir(krn_root)
+
+    # Make sure that the directory is not empty.
+    assert len(shr_files) > 1, "The directory shr is empty."
+    assert len(krn_files) > 1, "The directory krn is empty."
     
-    # Done by Kiran.
-    krn_root = r'D:\ML_projects\IPV-Project\annotation\data\ipv\kiran'
-    #shr_verified = r'D:\ML_projects\IPV-Project\annotation\data\CROSS\Sharmila Cross checked files'
-
-    shr_files = [file[:-4] for file in os.listdir(shr_root)]
-    krn_files = [file[:-4] for file in os.listdir(krn_root)]
-
-    # For agreement calculation.
+    # For agreement calculation, we need common files.
     target = np.intersect1d(shr_files, krn_files)
-    print(f'Number of files to inspect : {len(target)}\n')
+    print(f'\nNumber of files to inspect : {len(target)}\n')
 
-    shr_target_filenames = [os.path.join(shr_root, file + '.tsv') for file in target]
-    krn_target_filenames = [os.path.join(krn_root, file + '.tsv') for file in target]
+    # Set the target filenames.
+    shr_target_filenames = [os.path.join(shr_root, file) for file in target]
+    krn_target_filenames = [os.path.join(krn_root, file) for file in target]
 
     # For getting dataframes.
-    shr_filenames = [os.path.join(shr_root, file) for file in os.listdir(shr_root)]
-    krn_filenames = [os.path.join(krn_root, file) for file in os.listdir(krn_root)]
+    shr_filenames = [os.path.join(shr_root, file) for file in shr_files]
+    krn_filenames = [os.path.join(krn_root, file) for file in krn_files]
 
     df_shr = merge_annotations(shr_filenames)
     df_krn = merge_annotations(krn_filenames)
