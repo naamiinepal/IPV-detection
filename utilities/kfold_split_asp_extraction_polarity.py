@@ -12,6 +12,7 @@ Description:
 from collections import Counter
 import os
 from os.path import join
+from pprint import pprint
 import pandas as pd
 import numpy as np
 import argparse
@@ -96,11 +97,19 @@ def kfold_split_aspect(args, logger):
         utils.write_to_CONLL(val, join(save_filepath, 'val.txt'))
 
         # Value counter.
-        if args.verbose:
-            labels = val['labels'].sum()
-            asp_counts = Counter(labels)
-            logger.info("Aspect Categories Frequency Distribution:\n", asp_counts)
-        
+    
+        train_labels = train['labels'].sum()
+        train_asp_counts = dict(Counter(train_labels))
+
+        val_labels = val['labels'].sum()
+        val_asp_counts = dict(Counter(val_labels))
+
+        logger.info("Aspect Categories Frequency Distribution:\n")
+        logger.info("Train Set:\n")
+        pprint(train_asp_counts, width = 1)
+        logger.info("\nValidation Set:\n")
+        pprint(val_asp_counts, width = 1)
+    
         if args.verbose:    
             logger.info(f"\nSuccess! Save date : {utils.current_timestamp()}\n")
 
