@@ -95,7 +95,6 @@ def write_to_CONLL(df: DataFrame, filepath: str):
             for tokens, labels in zip(df['tokens'].iloc[ii], df['labels'].iloc[ii]):
                 writer.writerow([tokens, labels])
             writer.writerow(['', ''])   
-    print("Write Completed!\n")
 
 def get_logger(filepath):
     '''
