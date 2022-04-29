@@ -4,6 +4,7 @@ __pycache__/
 *.bin
 *.pth
 *.log
+*.xlsx
 
 cache_dir/
 saved_model_dir/
