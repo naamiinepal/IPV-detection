@@ -9,10 +9,12 @@ Description:
 """
 # Importing necessary Libraries.
 
+import csv
 import io
 import os
 import logging
 from os.path import exists, join
+from h11 import Data
 from matplotlib import pyplot as plt
 import numpy as np
 from pandas import DataFrame
@@ -84,6 +86,16 @@ def write_csv(df: DataFrame, target_filename: str):
     '''
     df.to_csv(target_filename, encoding = 'utf-8', header = None, index = None)
 
+def write_to_CONLL(df: DataFrame, filepath: str):
+
+    assert 'tokens' in df.columns and 'labels' in df.columns
+    with open(filepath, 'w', encoding='utf8', newline='') as tsvfile:
+        writer = csv.writer(tsvfile, delimiter='\t')
+        for ii in range(len(df)):
+            for tokens, labels in zip(df['tokens'].iloc[ii], df['labels'].iloc[ii]):
+                writer.writerow([tokens, labels])
+            writer.writerow(['', ''])   
+    print("Write Completed!\n")
 
 def get_logger(filepath):
     '''
