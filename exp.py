@@ -1,46 +1,51 @@
-import numpy as np
+import argparse
 import os
-from os.path import join
-from annotation.read_annotation import *
-from annotation.agreement import PairwiseAgreement
+from utilities import utils
+from utilities.kfold_split_asp_extraction import kfold_split_aspect
+#from utilities.read_configuration import DotDict
 
-def get_processed_data():
-    # Done by Sharmila.
-    shr_root = r'D:\ML_projects\IPV-Project\annotation\data\ipv\Sharmila'
-    #krn_verified = r'D:\ML_projects\IPV-Project\annotation\data\CROSS\Kiran Cross checked files'
+def argument_parser():
+    parser = argparse.ArgumentParser(description = "Argument Parser for Creating K fold splits fr aspect term extraction.")
+    parser.add_argument('-i', '--input_dir', default = r'data/aspect_extraction', type = str, metavar = 'PATH',
+                        help = 'Path to raw data directory.')
+    parser.add_argument('-o', '--save_dir', default = r'data/aspect_extraction/kfold', type = str, metavar='PATH',
+                        help = 'Path to the data directory to store K fold splits.')
+    parser.add_argument('--log_dir', default = r'logs/splits', type = str, metavar = 'PATH',
+                        help = 'Directory to save logs.')
+    parser.add_argument('-k', '--kfolds', default=5, type=int, 
+                        help = 'Number of folds to generate.')                    
+    parser.add_argument('-r', '--random_seed', default=1234, type=int, 
+                        help = 'Random seed.')
+    parser.add_argument('-v', '--verbose', action = 'store_true', 
+                        help = 'Whether to display verbose.')
+    args = parser.parse_args()
+    return args
+
+def log_object(args): 
+    '''
+    Generates a logger object.
+
+    Parameters
+    ----------
+    args : DotDict object.
+        Arguments for the project.
+
+    Returns
+    -------
+    logger : logger object on which log information can be written.
+    '''      
     
-    # Done by Kiran.
-    krn_root = r'D:\ML_projects\IPV-Project\annotation\data\ipv\kiran'
-    #shr_verified = r'D:\ML_projects\IPV-Project\annotation\data\CROSS\Sharmila Cross checked files'
+    # If the log directory does not exist, we'll create it.
+    os.makedirs(args.log_dir, exist_ok = True)
 
-    shr_files = [file[:-4] for file in os.listdir(shr_root)]
-    krn_files = [file[:-4] for file in os.listdir(krn_root)]
+    name_ = f"asp_extraction_{args.kfolds}_fold_split.log"
+    log_file = os.path.join(args.log_dir, name_)
 
-    # For agreement calculation.
-    target = np.intersect1d(shr_files, krn_files)
-    print(f'Number of files to inspect : {len(target)}\n')
-
-    shr_target_filenames = [os.path.join(shr_root, file + '.tsv') for file in target]
-    krn_target_filenames = [os.path.join(krn_root, file + '.tsv') for file in target]
-
-    # For getting dataframes.
-    shr_filenames = [os.path.join(shr_root, file) for file in os.listdir(shr_root)]
-    krn_filenames = [os.path.join(krn_root, file) for file in os.listdir(krn_root)]
-
-    df_shr = merge_annotations(shr_filenames)
-    df_krn = merge_annotations(krn_filenames)
-
-    return df_shr, df_krn
+    # Intialize Logger.
+    logger = utils.get_logger(log_file)
+    return logger
     
-
-def get_agreement(df_shr, df_krn):
-    shr_agreement = PairwiseAgreement(df_shr, df_krn, 'token', 1.0)
-    agreement_dict = shr_agreement.calculate_agreement()
-    df = pd.DataFrame(agreement_dict, index=[0]).T.round(3)
-    df.to_csv('agreement1.csv')
-    print(agreement_dict)
-
 if __name__ == "__main__":
-    df_shr, df_krn = get_processed_data()
-    df_shr.to_csv(os.path.join(r"annotation\data\aspect_extraction_sample", 'shr_asp.csv'), index = None, encoding='utf-8')
-    df_krn.to_csv(os.path.join(r"annotation\data\aspect_extraction_sample", 'krn_asp.csv'), index = None, encoding='utf-8')
+    args = argument_parser()
+    logger = log_object(args)
+    kfold_split_aspect(args, logger)
