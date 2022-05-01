@@ -1,15 +1,29 @@
 from torchtext.legacy.data import Field, BucketIterator
 from torchtext.legacy.datasets import SequenceTaggingDataset
+from transformers import BertTokenizer
 
 class AspectExtractionCorpus:
 
-	def __init__(self, input_directory, device):
+	def __init__(self, args, input_directory, device):
 		
 		self.input_directory = input_directory
 		self.device = device
 
+		if self.args.model == 'bert' or self.args.model == 'muril':
+            self.bert_tokenizer = BertTokenizer.from_pretrained(self.args.bert.model_name) 
+            self.PAD_INDEX = self.bert_tokenizer.pad_token
+            self.CLS_INDEX = self.bert_tokenizer.cls_token
+            self.UNK_INDEX = self.bert_tokenizer.unk_token
+
+			self.word_field = Field(tokenize = self.bert_tokenizer.tokenize,
+									batch_first = True,
+									pad_token = self.PAD_INDEX,
+									init_token = self.CLS_INDEX,
+									unk_token = self.UNK_INDEX)
 		# List all the fields.
-		self.word_field = Field(lower=True, batch_first=True)
+		else:
+			self.word_field = Field(batch_first=True)
+
 		self.tag_field = Field(unk_token=None, batch_first=True)
 		self.FIELDS = (("word", self.word_field), ("tag", self.tag_field))
 
