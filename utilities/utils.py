@@ -13,8 +13,9 @@ import csv
 import io
 import os
 import logging
+from pathlib import Path
+import re
 from os.path import exists, join
-from h11 import Data
 from matplotlib import pyplot as plt
 import numpy as np
 from pandas import DataFrame
@@ -340,3 +341,27 @@ def tokenize_and_preserve_labels(sentence, text_labels, tokenizer):
         labels.extend([label] * n_subwords)
 
     return tokenized_sentence, labels
+
+
+def flatten(mylist: list):
+    return [item for sublist in mylist for item in sublist]
+
+def read_CoNLL(file_path):
+    file_path = Path(file_path)
+
+    raw_text = file_path.read_text(encoding='utf8').strip()
+    raw_docs = re.split(r'\n\t?\n', raw_text)
+    token_docs = []
+    tag_docs = []
+    for doc in raw_docs:
+        tokens = []
+        tags = []
+        for line in doc.split('\n'):
+            token, tag = line.split('\t')
+            tokens.append(token)
+            tags.append(tag)
+        token_docs.append(tokens)
+        tag_docs.append(tags)
+
+    return token_docs, tag_docs
+   
