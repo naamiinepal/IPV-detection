@@ -77,4 +77,8 @@ The project consists of two main tasks, **Aspect Term Extraction** and **IPV Pol
 ### Data curated frequency
 ![Data curated frequency](images/markdown/data_collection_stat.png "Data curated frequency")
 
+# Updates
+## Annotation:
+    - 1st lot: IPV
+    - 2nd lot: non-IPV 
 
