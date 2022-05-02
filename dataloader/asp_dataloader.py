@@ -38,8 +38,8 @@ class AspectExtractionCorpus:
 		self.tag_pad_idx = self.tag_field.vocab.stoi[self.tag_field.pad_token]
 
 		# Vocabulary and Tagset size.
-		self.vocab_size = len(self.word_field.vocab.itos)    # Includeds <pad> and <unk> as well.
-		self.tagset_size = len(self.tag_field.vocab.itos)    # Includes <pad> as well.
+		self.vocab_size = len(self.word_field.vocab.itos)	# Includeds <pad> and <unk> as well.
+		self.tagset_size = len(self.tag_field.vocab.itos)	# Includes <pad> as well.
 
 	def print_statistics(self):
 		"""
@@ -76,11 +76,11 @@ class AspectExtractionCorpus:
 															repeat = False,
 															device = self.device)
 
-		return train_dl, val_dl                                                      
+		return train_dl, val_dl													  
 
 
 class AspectDataset(Dataset):
-    def __init__(self, input_directory: str, tokenizer, max_len: int, labels_to_ids: Dict = None, is_train: bool = True):
+	def __init__(self, input_directory: str, tokenizer, max_len: int, labels_to_ids: Dict = None, is_train: bool = True):
 		"""
 		Dataset class for Transformer architecture.
 
@@ -92,62 +92,61 @@ class AspectDataset(Dataset):
 											Defaults to None.
 			is_train (bool, optional): Whether the data is train set. Defaults to True.
 		"""	  	
-        self.input_directory = input_directory
-        self.tokenizer = tokenizer
-        self.max_len = max_len
+		self.input_directory = input_directory
+		self.tokenizer = tokenizer
+		self.max_len = max_len
 
-        self.sentences, self.labels = read_CoNLL(self.input_directory)
-        self.tags_list = set(flatten(self.labels))
+		self.sentences, self.labels = read_CoNLL(self.input_directory)
+		self.tags_list = set(flatten(self.labels))
 
-        if is_train:
-              self.labels_to_ids = {k: v for v, k in enumerate(self.tags_list)}
-              self.ids_to_labels = {v: k for v, k in enumerate(self.tags_list)}
-        else:
-              self.labels_to_ids = labels_to_ids
-              self.ids_to_labels = {v : k for k, v in self.labels_to_ids.items()}
+		if is_train:
+			self.labels_to_ids = {k: v for v, k in enumerate(self.tags_list)}
+			self.ids_to_labels = {v: k for v, k in enumerate(self.tags_list)}
+		else:
+			self.labels_to_ids = labels_to_ids
+			self.ids_to_labels = {v : k for k, v in self.labels_to_ids.items()}
 
 
-    def __getitem__(self, index):
+	def __getitem__(self, index):
 
-        # step 1: get the sentence and word labels 
-        sentence = self.sentences[index]  
-        word_labels = self.labels[index] 
+		# step 1: get the sentence and word labels 
+		sentence = self.sentences[index]  
+		word_labels = self.labels[index] 
 
-        # step 2: use tokenizer to encode sentence (includes padding/truncation up to max length)
-        # BertTokenizerFast provides a handy "return_offsets_mapping" functionality for individual tokens
-        encoding = self.tokenizer(sentence,
-                                  is_split_into_words=True, 
-                                  return_offsets_mapping=True, 
-                                  padding='max_length', 
-                                  truncation=True, 
-                                  max_length=self.max_len)
-        
-        # step 3: create token labels only for first word pieces of each tokenized word
-        labels = [self.labels_to_ids[label] for label in word_labels] 
-        
-        # code based on https://huggingface.co/transformers/custom_datasets.html#tok-ner
-        # create an empty array of -100 of length max_length
-        encoded_labels = ones(len(encoding["offset_mapping"]), dtype=int) * -100
-        
-        # set only labels whose first offset position is 0 and the second is not 0
-        i = 0
-        for idx, mapping in enumerate(encoding["offset_mapping"]):
-          if mapping[0] == 0 and mapping[1] != 0:
-            # overwrite label
-            encoded_labels[idx] = labels[i]
-            i += 1
+		# step 2: use tokenizer to encode sentence (includes padding/truncation up to max length)
+		# BertTokenizerFast provides a handy "return_offsets_mapping" functionality for individual tokens
+		encoding = self.tokenizer(sentence,
+								  is_split_into_words=True, 
+								  return_offsets_mapping=True, 
+								  padding='max_length', 
+								  truncation=True, 
+								  max_length=self.max_len)
+		
+		# step 3: create token labels only for first word pieces of each tokenized word
+		labels = [self.labels_to_ids[label] for label in word_labels] 
+		
+		# code based on https://huggingface.co/transformers/custom_datasets.html#tok-ner
+		# create an empty array of -100 of length max_length
+		encoded_labels = ones(len(encoding["offset_mapping"]), dtype=int) * -100
+		
+		# set only labels whose first offset position is 0 and the second is not 0
+		i = 0
+		for idx, mapping in enumerate(encoding["offset_mapping"]):
+			if mapping[0] == 0 and mapping[1] != 0:
+				encoded_labels[idx] = labels[i]
+				i += 1
 
-        # step 4: turn everything into PyTorch tensors
-        item = {key: as_tensor(val) for key, val in encoding.items()}
-        item['labels'] = as_tensor(encoded_labels)
+		# step 4: turn everything into PyTorch tensors
+		item = {key: as_tensor(val) for key, val in encoding.items()}
+		item['labels'] = as_tensor(encoded_labels)
 
-        # Get lengths.
-        item['seq_length'] = sum(encoding['attention_mask'])
-        
-        return item
+		# Get lengths.
+		item['seq_length'] = sum(encoding['attention_mask'])
+		
+		return item
 
-    def __len__(self):
-        return len(self.sentences)
+	def __len__(self):
+		return len(self.sentences)
 
 
 class AspectExtractionCorpus_Transformer:
