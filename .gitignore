@@ -9,5 +9,7 @@ __pycache__/
 cache_dir/
 saved_model_dir/
 embeddings/
-annotation/data/
+annotation/data/first_lot
+annotation/data/second_lot
+!/annotation/data/overall.xlsx
 images/
