@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import Dict, Tuple
 from numpy import ones
 from torch import as_tensor, index_put_
 from torchtext.legacy.data import Field, BucketIterator
@@ -18,22 +18,8 @@ class AspectExtractionCorpus:
 		self.device = device
 		self.model = model
 
-		# List all the fields.
-		if self.model in ["muril", "mbert"]:
-			self.bert_tokenizer = BertTokenizer.from_pretrained(model_name)
-			self.PAD_INDEX = self.bert_tokenizer.pad_token
-			self.CLS_INDEX = self.bert_tokenizer.cls_token
-			self.UNK_INDEX = self.bert_tokenizer.unk_token
-
-			self.word_field = Field(batch_first = True,
-									sequential = False,
-									pad_token = self.PAD_INDEX,
-									init_token = self.CLS_INDEX,
-									unk_token = self.UNK_INDEX)
-		
-		else:
-			self.word_field = Field(batch_first = True)
-
+		# Define the fields.
+		self.word_field = Field(batch_first = True)
 		self.tag_field = Field(unk_token = None, batch_first = True)
 		self.FIELDS = (("word", self.word_field), ("tag", self.tag_field))
 
@@ -94,7 +80,18 @@ class AspectExtractionCorpus:
 
 
 class AspectDataset(Dataset):
-  def __init__(self, input_directory, tokenizer, max_len, labels_to_ids = None, is_train = True):
+    def __init__(self, input_directory: str, tokenizer, max_len: int, labels_to_ids: Dict = None, is_train: bool = True):
+		"""
+		Dataset class for Transformer architecture.
+
+		Args:
+			input_directory (str): Directory containing "train.txt" and "val.txt".
+			tokenizer (_type_): Tokenizer instance.
+			max_len (int): Maximum length of the sequence.
+			labels_to_ids (Dict, optional): Mapping from labels to integers. Self generated if the the data is train set. If the data is val set, you neeed to supply the labels mapping.
+											Defaults to None.
+			is_train (bool, optional): Whether the data is train set. Defaults to True.
+		"""	  	
         self.input_directory = input_directory
         self.tokenizer = tokenizer
         self.max_len = max_len
@@ -110,7 +107,7 @@ class AspectDataset(Dataset):
               self.ids_to_labels = {v : k for k, v in self.labels_to_ids.items()}
 
 
-  def __getitem__(self, index):
+    def __getitem__(self, index):
 
         # step 1: get the sentence and word labels 
         sentence = self.sentences[index]  
@@ -149,7 +146,7 @@ class AspectDataset(Dataset):
         
         return item
 
-  def __len__(self):
+    def __len__(self):
         return len(self.sentences)
 
 
