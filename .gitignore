@@ -13,3 +13,4 @@ annotation/data/first_lot
 annotation/data/second_lot
 !/annotation/data/overall.xlsx
 images/
+results/
