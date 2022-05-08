@@ -11,6 +11,7 @@ saved_model_dir/
 embeddings/
 annotation/data/first_lot
 annotation/data/second_lot
+annotation/batches
 !/annotation/data/overall.xlsx
 images/
 results/
