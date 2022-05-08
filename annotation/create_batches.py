@@ -32,7 +32,7 @@ def create_batches_twitter(root_dir, filename, save_dir):
     df_overall = pd.read_excel(r'D:\ML_projects\IPV-Project\annotation\data\overall.xlsx')
 
     # Accumulate already annotated tweets links.
-    df_overall_link = df_overall[df_overall['source'] == 'twitter']['links']
+    df_overall_link = df_overall[df_overall['source'] == 'twitter']['link']
     df_link = df['link']
     common_tweets = np.intersect1d(df_overall_link, df_link)
 
