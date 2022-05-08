@@ -85,4 +85,4 @@ def create_batches_twitter(root_dir, filename, save_dir):
 if __name__ == "__main__":
     create_batches_twitter(root_dir=r'D:\ML_projects\IPV-Scraper\results\second_lot',
                             filename='df_merged_second_lot_search_terms_cleaned_05-May-2021_nep.xlsx',
-                            save_dir=r'D:\ML_projects\IPV-Scraper\results\second_lot\sample_folder1')
+                            save_dir=r'D:\ML_projects\IPV-Project\annotation\batches\twitter_2')
