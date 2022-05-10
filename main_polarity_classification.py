@@ -87,7 +87,7 @@ def train_dl_model(args: DotDict, logger: utils.log_object, device: str):
     logger.info(f'Training Started on {utils.current_timestamp()}.')    
         
     # Run training across different folds.
-    for k in range(1, 2):
+    for k in range(5):
         data_loader = Dataloader(args, k, device)
         train_dl, val_dl = data_loader.load_data(args.batch_size)
 
