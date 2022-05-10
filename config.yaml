@@ -64,7 +64,7 @@ bert:
 # Vectorizer.
 vectorizer:
     mode: tfidf
-    max_features: 2000
+    max_features: 1000
 
 # SVM.
 svm:
