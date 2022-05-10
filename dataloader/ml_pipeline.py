@@ -1,5 +1,7 @@
 import os
 from os.path import join, exists
+import re
+import emoji
 from pandas import DataFrame, read_csv
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import pickle
@@ -84,7 +86,28 @@ class MLPipeline:
         return y_pred_train, y_pred_val
 
     def _raw_text_cleaner(self, text):
-        return 
+        """
+        Cleans the tweets using the fllowing sequential steps:
+            - Remove all the words starting with '_' ("_ahiraj"), mentions starting with '_' ("@_Silent__Eyes__") and also Devanagiri ("@पाेखरा") and hashtags used with Devanagiri ("#पाेखरा").
+            - Remove punctuations (selected manually). This does not include sentence enders like "|" or "." or "?" or "!".
+            - Removes bad characters like "&gt;".
+            - If a punctuation or a whitespace has been repeated multiple times, adjust it to a single occurence.
+
+        Args:
+            text (str): Input text.
+
+        Returns:
+            str: Cleaned text.
+        """    
+        pattern1 = r'(_[a-zA-Z0-9]+)|(#[\u0900-\u097F]+)|(@[\u0900-\u097F]+)|(_[\u0900-\u097F]+)|(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)|https?:\/\/\S*'
+        to_replace = """@#=/+…:"")(}{][*%_’‘'"""
+        pattern2 = r'(\W)(?=\1)'
+        text = re.sub(pattern1, '', text)
+        text = text.translate(str.maketrans('', '', to_replace))
+        text = text.translate(str.maketrans('', '', '&gt;'))
+        text = emoji.replace_emoji(text, "")
+        text = re.sub(pattern2, '', text)
+        return text
 
     def _save_model(self, model, filename = 'model.sav'):
         os.makedirs(self.save_model_dir, exist_ok = True)
