@@ -8,6 +8,7 @@ Created on Mon Apr  4 07:31:31 2022
 # Libraries.
 from os.path import join, exists
 import os
+import pickle
 
 import pandas as pd
 import numpy as np
@@ -26,7 +27,8 @@ class MLTrainer:
         self.args = args
         self.logger = logger
         self.logger.info(f"Running {args.model} Classifier...\n")
-
+        
+        
     def _write_results(self, record_df: pd.DataFrame, cache_path: str):
         '''
         Write results to cache_dir.
@@ -116,3 +118,4 @@ class MLTrainer:
         
         # Write Results to cache Directory.
         self._write_results(record_df, cache_path)
+
