@@ -6,20 +6,14 @@ Created on Tue Apr 12 09:44:35 2022
 """
 
 # Necessary libraries.
+from numpy import intersect1d
 import pandas as pd
-import copy
 import os
 from os.path import join, exists
 
 # Local modules.
 from .annotation_utils import get_file, convert_to_bio
 
-# Path to data.
-root = r'annotation\data'
-annot1 = r'annotation\data\krn'
-annot2 = r'annotation\data\shr'
-
-example = 'batch_ipv_600-610 exported.tsv'
 
 def parse_file(filename: str) -> pd.DataFrame:
     """
@@ -49,8 +43,11 @@ def parse_file(filename: str) -> pd.DataFrame:
             count += 1
             continue
         else:
-            storage.append(line.split())
-    
+            splits = line.split()
+            if len(splits) == 5:
+                splits = splits[:3] + ["_", "_"] + splits[3:]
+            storage.append(splits)
+   
     # Define DataFrame.
     df = pd.DataFrame(storage, columns = 's_no, str_id, token, ac, ap, conf, ipv'.split(", "))
 
@@ -77,5 +74,51 @@ def merge_annotations(filename_list: list) -> pd.DataFrame:
         pd.DataFrame: DataFrame contaning all the annotations from the files provided.
     """    
     storage = [parse_file(file) for file in filename_list]
-    res = pd.concat(storage, axis = 0).reset_index(drop = True)
+    res = pd.concat(storage, axis = 0, ignore_index = True)
     return res
+
+def get_processed_data(shr_root: str, krn_root: str, get_common: bool = True) -> pd.DataFrame:
+    """
+    Process all the exported data by both annotators into one. 
+
+    Args:
+        shr_root (str): Directory holding the exported files by annotator 1.
+        krn_root (str): Directory holding the exported files by annotator 2.
+        get_common (bool, optional): If set to True, return the common file for both Annotators. Used for computing Inter-rated agreement. Defaults to True.
+
+    Returns:
+        pd.DataFrame: DataFrame containing seven fields, namely, {s_no, str_id, token, ac, ap, conf, ipv}.
+    """    
+
+    # Get the filenames of the exports in both directories.
+    shr_files = os.listdir(shr_root)
+    krn_files = os.listdir(krn_root)
+
+    # Make sure that the directory is not empty.
+    assert len(shr_files) > 1, "The directory shr is empty."
+    assert len(krn_files) > 1, "The directory krn is empty."
+
+    # For interannotator agreement.
+    if get_common:
+        # For agreement calculation, we need common files.
+        target = intersect1d(shr_files, krn_files)
+        print(f'\nNumber of files to inspect : {len(target)}\n')
+
+        # Set the target filenames.
+        shr_target_filenames = [os.path.join(shr_root, file) for file in target]
+        krn_target_filenames = [os.path.join(krn_root, file) for file in target]
+
+        df_shr_common = merge_annotations(shr_target_filenames)
+        df_krn_common = merge_annotations(krn_target_filenames)
+
+        return df_shr_common, df_krn_common
+
+    # For getting dataframes.
+    shr_filenames = [os.path.join(shr_root, file) for file in shr_files]
+    krn_filenames = [os.path.join(krn_root, file) for file in krn_files]
+
+    # Merge annotations for both.
+    df_shr = merge_annotations(shr_filenames)
+    df_krn = merge_annotations(krn_filenames)
+
+    return df_shr, df_krn
