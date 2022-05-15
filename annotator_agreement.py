@@ -81,4 +81,4 @@ if __name__ == "__main__":
     df_shr, df_krn = get_processed_data(shr_root, krn_root, get_common=True)
 
     # Get and store results.
-    get_agreement(df_shr, df_krn, filepath = args.save_filename)
+    get_agreement(df_shr, df_krn, filepath = join(args.output_dir, args.save_filename))
