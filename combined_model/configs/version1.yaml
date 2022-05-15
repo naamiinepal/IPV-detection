@@ -1,21 +1,21 @@
 seed_everything: null
 trainer:
-  logger: pytorch_lightning.loggers.WandbLogger
-  init_args:
-      project: aspect_detection
-      name: combined_muril_bias_adj
-  devices: null
-  gpus: null
-  max_epochs: null
-  accelerator: null
+  logger:
+      - class_path: pytorch_lightning.loggers.WandbLogger
+        init_args:
+            project: aspect_detection
+            name: combined_muril_bias_adj
+  devices: [1]
+  max_epochs: 60
+  accelerator: "gpu"
   strategy: null
 model:
   model_name_or_path: google/muril-base-cased
   learning_rate: 5.0e-05
   warmup_ratio: 0.1
   weight_decay: 0.01
-  lambda_weight: 4.0
-  word_dropout_rate: 0.2
+  lambda_weight: 2.0
+  word_dropout_rate: 0.1
   sent_dropout_rate: 0.2
   calc_word_bias: true
   calc_sent_bias: true
