@@ -1,11 +1,19 @@
-from doctest import OutputChecker
+# -*- coding: utf-8 -*-
+"""
+Created on Friday Apr 15 11:46:27 2022
+
+@author: Sagun Shakya
+
+Description: 
+    Inter-annotator agreement of two annotators based on F1-measure.
+"""
+
+# Necessary imports.
 import numpy as np
 import os
 from os.path import join
 from pandas import DataFrame
 import argparse
-
-from yaml import parse
 
 # Local Modules.
 from annotation.read_annotation import *
@@ -39,6 +47,9 @@ def parse_arguments():
 
 
 def get_agreement(df_shr, df_krn, filepath):
+    '''
+    Calculate IA agreement using the aggregated dataframes of two annotators.
+    '''
     shr_agreement = PairwiseAgreement(df_shr, df_krn, 'token', 1.0)
     agreement_dict = shr_agreement.calculate_agreement()
     agreement_df = pd.DataFrame(agreement_dict, index=[0]).T.round(3)
