@@ -52,7 +52,7 @@ class CombinedTransformer(pl.LightningModule):
             )
 
         return (
-            nn.Sequential(linear, nn.Dropout(dropout_rate))
+            nn.Sequential(nn.Dropout(dropout_rate), linear)
             if dropout_rate > 0
             else linear
         )
