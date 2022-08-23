@@ -6,33 +6,27 @@ from typing import Iterator, Optional, Sequence
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+from transformers import DataCollatorForTokenClassification
+
+from constants import DATASET_FOLDER, MAX_PROC
 from datasets import load_dataset, load_from_disk
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
-
-from combined_data_collator import CombinedDataCollator
-from constants import DATASET_FOLDER, MAX_PROC, MODEL_NAME
 
 
-class CombinedDataModule(pl.LightningDataModule):
+class WordDataModule(pl.LightningDataModule):
     def __init__(
         self,
         dataset_path: str,
         data_dir: str = DATASET_FOLDER,
-        model_name_or_path: str = MODEL_NAME,
         val_ratio: float = 0.1,
-        batch_size: int = 64,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.save_hyperparameters()
 
-    def setup(self, stage: Optional[str] = None):
-
-        self.tokenizer = AutoTokenizer.from_pretrained(self.hparams.model_name_or_path)
-
-        self.data_collator = CombinedDataCollator(tokenizer=self.tokenizer)
+        self.data_collator = DataCollatorForTokenClassification(
+            tokenizer=self.tokenizer
+        )
 
         #         self.id2label = self.load_json("id2label")
         self.label_names = self.load_json("label_names")
@@ -40,6 +34,7 @@ class CombinedDataModule(pl.LightningDataModule):
 
         self.num_labels = len(self.label_names)
 
+    def setup(self, stage: Optional[str] = None):
         # Assign train/val datasets for use in dataloaders
         if stage is None or stage == "fit":
 
@@ -61,8 +56,7 @@ class CombinedDataModule(pl.LightningDataModule):
                             data_files=f"{dataset_path}.csv",
                             split="train",
                         )
-                        .remove_columns("annotator")
-                        .rename_column("ipv", "sent_label")
+                        .remove_columns(["annotator", "ipv"])
                         .train_test_split(test_size=self.hparams.val_ratio)
                         .map(
                             lambda row: {
@@ -77,7 +71,7 @@ class CombinedDataModule(pl.LightningDataModule):
                 dataset_full = raw_dataset.map(
                     self.tokenize_and_align_labels,
                     batched=True,
-                    batch_size=64,
+                    batch_size=256,
                     remove_columns=["ac", "tokens"],
                     num_proc=MAX_PROC,
                 )
@@ -86,11 +80,6 @@ class CombinedDataModule(pl.LightningDataModule):
 
             train_dataset = dataset_full["train"]
 
-            sent_pos = sum(train_dataset["sent_label"])
-            sent_neg = len(train_dataset) - sent_pos
-
-            self.sent_bias_init = math.log(sent_pos) - math.log(sent_neg)
-
             count_series = pd.value_counts(
                 np.hstack(train_dataset["labels"]), sort=False
             ).sort_index()[1:]
@@ -98,25 +87,6 @@ class CombinedDataModule(pl.LightningDataModule):
 
             self.train_dataset = train_dataset
             self.val_dataset = dataset_full["test"]
-
-    def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.hparams.batch_size,
-            num_workers=MAX_PROC,
-            shuffle=True,
-            pin_memory=True,
-            collate_fn=self.data_collator,
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset,
-            batch_size=self.hparams.batch_size,
-            num_workers=MAX_PROC,
-            pin_memory=True,
-            collate_fn=self.data_collator,
-        )
 
     def load_json(self, file_prefix: str):
         with open(os.path.join(self.hparams.data_dir, f"{file_prefix}.json")) as f:

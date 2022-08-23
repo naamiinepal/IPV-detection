@@ -1,7 +1,7 @@
 import os
 
 # Too much processes didn't show improvements
-MAX_PROC = min(os.cpu_count(), 8)
+MAX_PROC = min(os.cpu_count(), 4)
 
 MODEL_NAME = "google/muril-base-cased"
 
