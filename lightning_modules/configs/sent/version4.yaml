@@ -1,0 +1,51 @@
+# pytorch_lightning==1.7.2
+seed_everything: 42
+trainer:
+  logger:
+      - class_path: pytorch_lightning.loggers.WandbLogger
+        init_args:
+            project: aspect_detection
+            name: sent_muril_bias_plateu_norm_free
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.ModelCheckpoint
+      init_args:
+        save_top_k: 10
+        monitor: ${model.init_args.monitor}
+        mode: min
+        dirpath: checkpoints/sent_muril_bias_plateu_norm_free
+        save_weights_only: True
+        filename: "{epoch:02d}-{val_loss:.3f}"
+    - class_path: pytorch_lightning.callbacks.LearningRateMonitor
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        monitor: ${model.init_args.monitor}
+        patience: 5
+        verbose: True
+  devices: [0]
+  max_epochs: 60
+  accelerator: auto
+  # strategy: ddp_find_unused_parameters_false
+  log_every_n_steps: 33
+  # fast_dev_run: True
+ckpt_path: null
+model:
+  class_path: models.sent_model.SentModel
+  init_args:
+    model_name_or_path: ${data.init_args.model_name_or_path}
+    dropout_rate: 0.3
+    learning_rate: 5.0e-05
+    weight_decay: 0.01
+    sexual_weight: 0.1
+    calc_bias: True
+    plateu_factor: 0.1
+    plateu_patience: 2
+    monitor: val_loss
+data:
+  class_path: datamodules.sent_datamodule.SentDataModule
+  init_args:
+    dataset_path: datasets/sentence
+    val_ratio: 0.1
+    model_name_or_path: google/muril-base-cased
+    batch_size: 64
+    max_workers: 4
+    pin_memory: True

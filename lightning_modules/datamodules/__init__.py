@@ -41,3 +41,11 @@ class BaseDataModule(pl.LightningDataModule):
             pin_memory=self.hparams.pin_memory,
             collate_fn=self.data_collator,
         )
+
+    def predict_dataloader(self):
+        return DataLoader(
+            self.pred_dataset,
+            batch_size=self.hparams.batch_size,
+            num_workers=self.num_workers,
+            collate_fn=self.data_collator,
+        )

@@ -18,6 +18,8 @@ class BaseModel(pl.LightningModule):
     ):
         super().__init__()
 
+        self.save_hyperparameters()
+
     def forward(self, inputs: TensorDict):
         return self.model(**inputs)
 

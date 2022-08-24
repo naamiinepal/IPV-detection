@@ -25,17 +25,20 @@ class SentDataModule(BaseDataModule):
 
         self.data_collator = DataCollatorWithPadding(tokenizer=self.tokenizer)
 
+    def tokenize(self, batch):
+        return self.tokenizer(batch["text"], truncation=True)
+
     def setup(self, stage: Optional[str] = None):
+        dataset_path = self.hparams.dataset_path
+
+        tokenized_path = os.path.join(
+            f"{dataset_path}_cache",
+            f"{self.hparams.model_name_or_path.replace('/', '_')}",
+        )
 
         # Assign train/val datasets for use in dataloaders
-        if stage is None or stage == "fit":
+        if stage is None or stage == "fit" or stage == "validate":
 
-            dataset_path = self.hparams.dataset_path
-
-            tokenized_path = os.path.join(
-                f"{dataset_path}_cache",
-                f"{self.hparams.model_name_or_path.replace('/', '_')}",
-            )
             if os.path.isdir(tokenized_path):
                 dataset_full = load_from_disk(tokenized_path)
             else:
@@ -47,7 +50,7 @@ class SentDataModule(BaseDataModule):
                     )
                     .train_test_split(test_size=self.hparams.val_ratio)
                     .map(
-                        lambda batch: self.tokenizer(batch["text"], truncation=True),
+                        self.tokenize,
                         batched=True,
                         batch_size=1024,
                         remove_columns="text",
@@ -57,5 +60,27 @@ class SentDataModule(BaseDataModule):
 
                 dataset_full.save_to_disk(tokenized_path)
 
-            self.train_dataset = dataset_full["train"]
             self.val_dataset = dataset_full["test"]
+
+            if stage != "validate":
+                self.train_dataset = dataset_full["train"]
+
+        if stage is None or stage == "predict":
+            if os.path.isdir(tokenized_path):
+                self.dataset_full = load_from_disk(tokenized_path)
+            else:
+                # Needed for writing to the predictions file
+                self.dataset_full = load_dataset(
+                    "csv",
+                    data_files=os.path.join(dataset_path, "combined.csv"),
+                    split="train",
+                ).map(
+                    self.tokenize,
+                    batched=True,
+                    batch_size=1024,
+                    num_proc=self.num_workers,
+                )
+
+                self.dataset_full.save_to_disk(tokenized_path)
+
+            self.pred_dataset = self.dataset_full.remove_columns("text")
