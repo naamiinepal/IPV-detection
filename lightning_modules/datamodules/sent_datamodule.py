@@ -3,7 +3,6 @@ from typing import Optional
 
 from transformers import DataCollatorWithPadding
 
-from constants import DATASET_FOLDER
 from datasets import load_dataset, load_from_disk
 
 from . import BaseDataModule
@@ -15,7 +14,7 @@ class SentDataModule(BaseDataModule):
 
     def __init__(
         self,
-        dataset_path: str = DATASET_FOLDER,
+        dataset_path: str,
         val_ratio: float = 0.1,
         **kwargs,
     ):
@@ -33,7 +32,7 @@ class SentDataModule(BaseDataModule):
 
         tokenized_path = os.path.join(
             f"{dataset_path}_cache",
-            f"{self.hparams.model_name_or_path.replace('/', '_')}",
+            self.hparams.model_name_or_path.replace("/", "_"),
         )
 
         # Assign train/val datasets for use in dataloaders
@@ -67,10 +66,10 @@ class SentDataModule(BaseDataModule):
 
         if stage is None or stage == "predict":
             if os.path.isdir(tokenized_path):
-                self.dataset_full = load_from_disk(tokenized_path)
+                self.pred_dataset = load_from_disk(tokenized_path)
             else:
                 # Needed for writing to the predictions file
-                self.dataset_full = load_dataset(
+                self.pred_dataset = load_dataset(
                     "csv",
                     data_files=os.path.join(dataset_path, "combined.csv"),
                     split="train",
@@ -79,8 +78,7 @@ class SentDataModule(BaseDataModule):
                     batched=True,
                     batch_size=1024,
                     num_proc=self.num_workers,
+                    remove_columns=["text"],
                 )
 
-                self.dataset_full.save_to_disk(tokenized_path)
-
-            self.pred_dataset = self.dataset_full.remove_columns("text")
+                self.pred_dataset.save_to_disk(tokenized_path)

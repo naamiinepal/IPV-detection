@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from constants import DATASET_FOLDER, MAX_PROC
+from constants import MAX_PROC
 from datasets import load_dataset, load_from_disk
 
 from .combined_data_collator import CombinedDataCollator
@@ -16,7 +16,6 @@ class CombinedDataModule(WordDataModule):
     def __init__(
         self,
         dataset_path: str,
-        data_dir: str = DATASET_FOLDER,
         val_ratio: float = 0.1,
         **kwargs,
     ):
@@ -31,9 +30,7 @@ class CombinedDataModule(WordDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage is None or stage == "fit":
 
-            dataset_path = os.path.join(
-                self.hparams.data_dir, self.hparams.dataset_path
-            )
+            dataset_path = self.hparams.dataset_path
             tokenized_path = (
                 f"{dataset_path}_{self.hparams.model_name_or_path.replace('/', '_')}"
             )

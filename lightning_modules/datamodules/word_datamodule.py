@@ -1,22 +1,19 @@
 import json
-import math
 import os.path
 from typing import Iterator, Optional, Sequence
 
-import numpy as np
-import pandas as pd
-import pytorch_lightning as pl
 from transformers import DataCollatorForTokenClassification
 
-from constants import DATASET_FOLDER, MAX_PROC
+from constants import MAX_PROC
 from datasets import load_dataset, load_from_disk
 
+from . import BaseDataModule
 
-class WordDataModule(pl.LightningDataModule):
+
+class WordDataModule(BaseDataModule):
     def __init__(
         self,
         dataset_path: str,
-        data_dir: str = DATASET_FOLDER,
         val_ratio: float = 0.1,
         **kwargs,
     ):
@@ -28,69 +25,72 @@ class WordDataModule(pl.LightningDataModule):
             tokenizer=self.tokenizer
         )
 
-        #         self.id2label = self.load_json("id2label")
-        self.label_names = self.load_json("label_names")
-        #         self.label2id = self.load_json("label2id")
-
-        self.num_labels = len(self.label_names)
+        with open(os.path.join(dataset_path, "label_names.json")) as f:
+            self.label_names = json.load(f)
 
     def setup(self, stage: Optional[str] = None):
-        # Assign train/val datasets for use in dataloaders
-        if stage is None or stage == "fit":
+        dataset_path = self.hparams.dataset_path
+        tokenized_path = os.path.join(
+            f"{dataset_path}_cache",
+            self.hparams.model_name_or_path.replace("/", "_"),
+        )
 
-            dataset_path = os.path.join(
-                self.hparams.data_dir, self.hparams.dataset_path
-            )
-            tokenized_path = (
-                f"{dataset_path}_{self.hparams.model_name_or_path.replace('/', '_')}"
-            )
+        if stage is None or stage == "fit" or stage == "validate":
             if os.path.isdir(tokenized_path):
                 dataset_full = load_from_disk(tokenized_path)
             else:
-                if os.path.isdir(dataset_path):
-                    raw_dataset = load_from_disk(dataset_path)
-                else:
-                    raw_dataset = (
-                        load_dataset(
-                            "csv",
-                            data_files=f"{dataset_path}.csv",
-                            split="train",
-                        )
-                        .remove_columns(["annotator", "ipv"])
-                        .train_test_split(test_size=self.hparams.val_ratio)
-                        .map(
-                            lambda row: {
-                                "ac": eval(row["ac"]),
-                                "tokens": eval(row["tokens"]),
-                            },
-                            num_proc=MAX_PROC,
-                        )
+                dataset_full = (
+                    load_dataset(
+                        "csv",
+                        data_files=os.path.join(dataset_path, "combined.csv"),
+                        split="train",
                     )
-                    raw_dataset.save_to_disk(dataset_path)
-
-                dataset_full = raw_dataset.map(
-                    self.tokenize_and_align_labels,
-                    batched=True,
-                    batch_size=256,
-                    remove_columns=["ac", "tokens"],
-                    num_proc=MAX_PROC,
+                    .train_test_split(test_size=self.hparams.val_ratio)
+                    .map(
+                        lambda row: {
+                            "ac": eval(row["ac"]),
+                            "tokens": eval(row["tokens"]),
+                        },
+                        num_proc=MAX_PROC,
+                    )
+                    .map(
+                        self.tokenize_and_align_labels,
+                        batched=True,
+                        batch_size=1024,
+                        remove_columns=["ac", "tokens"],
+                        num_proc=MAX_PROC,
+                    )
                 )
 
                 dataset_full.save_to_disk(tokenized_path)
 
-            train_dataset = dataset_full["train"]
-
-            count_series = pd.value_counts(
-                np.hstack(train_dataset["labels"]), sort=False
-            ).sort_index()[1:]
-            self.word_bias_init = np.log(count_series) - math.log(sum(count_series))
-
-            self.train_dataset = train_dataset
             self.val_dataset = dataset_full["test"]
 
-    def load_json(self, file_prefix: str):
-        with open(os.path.join(self.hparams.data_dir, f"{file_prefix}.json")) as f:
-            return json.load(f)
+            if stage != "validate":
+                self.train_dataset = dataset_full["train"]
+
+            # count_series = pd.value_counts(
+            #     np.hstack(train_dataset["labels"]), sort=False
+            # ).sort_index()[1:]
+
+        if stage is None or stage == "predict":
+            if os.path.isdir(tokenized_path):
+                self.pred_dataset = load_from_disk(tokenized_path)
+            else:
+                # Needed for writing to the predictions file
+                self.pred_dataset = load_dataset(
+                    "csv",
+                    data_files=os.path.join(dataset_path, "combined.csv"),
+                    split="train",
+                ).map(
+                    self.tokenize,
+                    batched=True,
+                    batch_size=1024,
+                    num_proc=self.num_workers,
+                    remove_columns=["text"],
+                )
+
+                self.pred_dataset.save_to_disk(tokenized_path)
 
     @staticmethod
     def align_labels_with_tokens(

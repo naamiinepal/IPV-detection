@@ -1,0 +1,50 @@
+# pytorch_lightning==1.7.4
+seed_everything: 42
+trainer:
+  logger:
+      - class_path: pytorch_lightning.loggers.WandbLogger
+        init_args:
+            project: aspect_detection
+            name: word_muril_bias_adj
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.ModelCheckpoint
+      init_args:
+        save_top_k: 10
+        monitor: ${model.init_args.monitor}
+        mode: min
+        dirpath: checkpoints/word_muril_bias_adj
+        save_weights_only: True
+        filename: "{epoch:02d}-{val_loss:.3f}"
+    - class_path: pytorch_lightning.callbacks.LearningRateMonitor
+    - class_path: pytorch_lightning.callbacks.EarlyStopping
+      init_args:
+        monitor: ${model.init_args.monitor}
+        patience: 5
+        verbose: True
+  devices: auto
+  max_epochs: 60
+  accelerator: auto
+  strategy: ddp_find_unused_parameters_false
+  log_every_n_steps: 33
+  # fast_dev_run: True
+ckpt_path: null
+model:
+  class_path: models.word_model.WordModel
+  init_args:
+    model_name_or_path: ${data.init_args.model_name_or_path}
+    dropout_rate: 0.4
+    learning_rate: 5.0e-05
+    weight_decay: 0.01
+    plateu_factor: 0.1
+    plateu_patience: 2
+    monitor: val_loss
+    calc_bias: true
+data:
+  class_path: datamodules.word_datamodule.WordDataModule
+  init_args:
+    dataset_path: datasets/word
+    val_ratio: 0.1
+    model_name_or_path: google/muril-base-cased
+    batch_size: 32
+    max_workers: 4
+    pin_memory: true

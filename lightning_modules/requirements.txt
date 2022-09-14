@@ -1,0 +1,12 @@
+torch
+transformers
+datasets
+pandas
+numpy
+pytorch_lightning
+torchmetrics
+tqdm
+jsonargparse[signatures]
+omegaconf
+evaluate
+seqeval
