@@ -2,8 +2,9 @@ import re
 from typing import Callable
 from unicodedata import normalize
 
-from constants import MODEL_NAME
 from transformers import AutoTokenizer, BertTokenizerFast
+
+from constants import MODEL_NAME
 
 url_pattern = re.compile(r"(https?://[^\s]+)")
 mention_pattern = re.compile(r"@[^\s]+")

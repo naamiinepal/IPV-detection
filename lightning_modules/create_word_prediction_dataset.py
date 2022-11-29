@@ -1,7 +1,8 @@
 #! .venv/bin/python
 
-from glob import glob
 import os.path
+from glob import glob
+
 import pandas as pd
 
 from utils import cleaner

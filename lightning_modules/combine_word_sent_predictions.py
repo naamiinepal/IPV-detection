@@ -1,7 +1,8 @@
 #! .venv/bin/python
 
-import pandas as pd
 import os.path
+
+import pandas as pd
 
 from utils import tokenizer_normalize
 

@@ -1,5 +1,6 @@
 import math
 from typing import Optional
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -8,8 +9,9 @@ from transformers import AutoModel, BertModel
 
 from constants import MODEL_NAME
 from datamodules.sent_datamodule import SentDataModule
-from models import BaseModel
 from datasets import Dataset
+from models import BaseModel
+
 from . import TensorDict
 
 

@@ -1,5 +1,6 @@
 import json
 import os.path
+
 import pandas as pd
 
 DATA_DIR = os.path.join("datasets", "word")

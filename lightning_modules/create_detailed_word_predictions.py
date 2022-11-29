@@ -7,7 +7,6 @@ import pandas as pd
 
 from utils import cleaner, tokenizer_normalize
 
-
 DATA_DIR = os.path.join("datasets", "raw_words")
 
 file_names = glob(os.path.join(DATA_DIR, "*_tweets", "*.csv"))

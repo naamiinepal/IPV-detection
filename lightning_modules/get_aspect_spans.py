@@ -1,8 +1,8 @@
 #! .venv/bin/python
 
+from ast import literal_eval
 from string import punctuation
 from typing import Callable, List, Tuple
-from ast import literal_eval
 
 import pandas as pd
 

@@ -1,7 +1,7 @@
 #! .venv/bin/python
 
 import os.path
-from argparse import ArgumentParser, Namespace, BooleanOptionalAction
+from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 
 import numpy as np
 import pandas as pd
