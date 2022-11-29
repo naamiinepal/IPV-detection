@@ -1,9 +1,9 @@
-import os.path
 import re
-from glob import glob
+from typing import Callable
 from unicodedata import normalize
 
-import pandas as pd
+from constants import MODEL_NAME
+from transformers import AutoTokenizer, BertTokenizerFast
 
 url_pattern = re.compile(r"(https?://[^\s]+)")
 mention_pattern = re.compile(r"@[^\s]+")
@@ -46,42 +46,11 @@ def cleaner(text: str) -> str:
     return final_text
 
 
-DATA_DIR = os.path.join("datasets", "raw")
+def tokenizer_normalize(model_name: str = MODEL_NAME) -> Callable[[str], str]:
+    """
+    Returns a function that normalizes the text using the tokenizer's
+    """
 
-file_names = glob(os.path.join(DATA_DIR, "*_tweets", "*.csv"))
+    tokenizer: BertTokenizerFast = AutoTokenizer.from_pretrained(model_name)
 
-dataframe_sequence = []
-for file_name in file_names:
-    try:
-        df = pd.read_csv(file_name, usecols=["text"])
-    except pd.errors.EmptyDataError:
-        print("Empty dataframe:", file_name)
-    else:
-        dataframe_sequence.append(df)
-
-combined_df = pd.concat(dataframe_sequence).dropna()
-
-print("Before")
-print(combined_df.info())
-initial_count = len(combined_df)
-
-#  Normalize and strip spaces
-preprocessed_text = combined_df["text"].apply(cleaner).drop_duplicates()
-
-condition = preprocessed_text.apply(lambda x: len(x.split()) >= 3)
-
-old_texts = preprocessed_text[condition]
-
-training_texts = pd.read_csv(
-    os.path.join("datasets", "sentence", "combined.csv"), usecols=["text"]
-)["text"]
-
-new_text = set(old_texts) - set(training_texts)
-combined_df = pd.DataFrame({"text": tuple(new_text)})
-
-print("\n\nAfter")
-print(combined_df.info())
-
-print("\n\nDuplicates", initial_count - len(combined_df))
-
-combined_df.to_csv(os.path.join(DATA_DIR, "combined.csv"), index=False)
+    return tokenizer.backend_tokenizer.normalizer.normalize_str

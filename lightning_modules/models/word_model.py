@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 from transformers import AutoModelForTokenClassification, BertForTokenClassification
+from transformers.modeling_outputs import TokenClassifierOutput
 
 from constants import MODEL_NAME
 
@@ -31,6 +32,7 @@ class WordModel(BaseModel):
 
         datamodule = self.trainer.datamodule
         self.label_names = datamodule.label_names
+        self.tokenizer = datamodule.tokenizer
 
         self.model: BertForTokenClassification = (
             AutoModelForTokenClassification.from_pretrained(
@@ -113,10 +115,16 @@ class WordModel(BaseModel):
                     self.log(key, float(value), rank_zero_only=True, sync_dist=True)
 
     def predict_step(self, batch: TensorDict, batch_idx: int, dataloader_idx: int = 0):
-        predictions = self(batch).argmax(dim=-1)
+        output: TokenClassifierOutput = self(batch)
+        predictions = output.logits.argmax(dim=-1)
 
-        true_predictions = tuple(
-            tuple(self.label_names[p] for p in prediction) for prediction in predictions
-        )
+        true_predictions = [
+            [self.label_names[p] for p in prediction] for prediction in predictions
+        ]
 
-        return true_predictions
+        splitted_texts = [
+            self.tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=True)
+            for ids in batch["input_ids"]
+        ]
+
+        return true_predictions, splitted_texts

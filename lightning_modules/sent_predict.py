@@ -1,17 +1,19 @@
-import os.path
-from argparse import ArgumentParser, Namespace
+#! .venv/bin/python
 
-import pandas as pd
+import os.path
+from argparse import ArgumentParser, Namespace, BooleanOptionalAction
+
 import numpy as np
+import pandas as pd
 import torch
+from tqdm import tqdm
 
 from datamodules.sent_datamodule import SentDataModule
 from models.sent_model import SentModel
 
-from tqdm import tqdm
-
 
 def main(args: Namespace):
+
     device = torch.device("cuda", args.gpu) if args.gpu >= 0 else torch.device("cpu")
 
     model: SentModel = (
@@ -23,7 +25,10 @@ def main(args: Namespace):
     DATA_DIR = os.path.join("datasets", "raw")
 
     dm = SentDataModule.load_from_checkpoint(
-        args.ckpt_path, dataset_path=DATA_DIR, batch_size=args.batch_size
+        args.ckpt_path,
+        dataset_path=DATA_DIR,
+        batch_size=args.batch_size,
+        use_cache=args.use_cache,
     )
 
     dm.setup("predict")
@@ -66,6 +71,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--batch_size", type=int, default=64, help="batch size for dataloader"
+    )
+    parser.add_argument(
+        "--use_cache",
+        default=True,
+        help="Whether to use the tokenized cache",
+        action=BooleanOptionalAction,
     )
     args = parser.parse_args()
     main(args)

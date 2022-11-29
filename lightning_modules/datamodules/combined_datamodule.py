@@ -31,8 +31,9 @@ class CombinedDataModule(WordDataModule):
         if stage is None or stage == "fit":
 
             dataset_path = self.hparams.dataset_path
-            tokenized_path = (
-                f"{dataset_path}_{self.hparams.model_name_or_path.replace('/', '_')}"
+            tokenized_path = os.path.join(
+                f"{dataset_path}_combined_cache",
+                self.hparams.model_name_or_path.replace("/", "_"),
             )
             if os.path.isdir(tokenized_path):
                 dataset_full = load_from_disk(tokenized_path)

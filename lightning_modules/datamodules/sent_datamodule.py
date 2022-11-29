@@ -16,6 +16,7 @@ class SentDataModule(BaseDataModule):
         self,
         dataset_path: str,
         val_ratio: float = 0.1,
+        use_cache: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -31,14 +32,14 @@ class SentDataModule(BaseDataModule):
         dataset_path = self.hparams.dataset_path
 
         tokenized_path = os.path.join(
-            f"{dataset_path}_cache",
+            f"{dataset_path}_sent_cache",
             self.hparams.model_name_or_path.replace("/", "_"),
         )
 
         # Assign train/val datasets for use in dataloaders
         if stage is None or stage == "fit" or stage == "validate":
 
-            if os.path.isdir(tokenized_path):
+            if self.hparams.use_cache and os.path.isdir(tokenized_path):
                 dataset_full = load_from_disk(tokenized_path)
             else:
                 dataset_full = (
@@ -65,11 +66,11 @@ class SentDataModule(BaseDataModule):
                 self.train_dataset = dataset_full["train"]
 
         if stage is None or stage == "predict":
-            if os.path.isdir(tokenized_path):
-                self.pred_dataset = load_from_disk(tokenized_path)
+            if self.hparams.use_cache and os.path.isdir(tokenized_path):
+                self.dataset_full = load_from_disk(tokenized_path)
             else:
                 # Needed for writing to the predictions file
-                self.pred_dataset = load_dataset(
+                self.dataset_full = load_dataset(
                     "csv",
                     data_files=os.path.join(dataset_path, "combined.csv"),
                     split="train",
@@ -78,7 +79,8 @@ class SentDataModule(BaseDataModule):
                     batched=True,
                     batch_size=1024,
                     num_proc=self.num_workers,
-                    remove_columns=["text"],
                 )
 
-                self.pred_dataset.save_to_disk(tokenized_path)
+                self.dataset_full.save_to_disk(tokenized_path)
+
+            self.pred_dataset = self.dataset_full.remove_columns("text")

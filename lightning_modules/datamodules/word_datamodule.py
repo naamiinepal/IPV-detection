@@ -15,6 +15,7 @@ class WordDataModule(BaseDataModule):
         self,
         dataset_path: str,
         val_ratio: float = 0.1,
+        use_cache: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -31,12 +32,12 @@ class WordDataModule(BaseDataModule):
     def setup(self, stage: Optional[str] = None):
         dataset_path = self.hparams.dataset_path
         tokenized_path = os.path.join(
-            f"{dataset_path}_cache",
+            f"{dataset_path}_word_cache",
             self.hparams.model_name_or_path.replace("/", "_"),
         )
 
         if stage is None or stage == "fit" or stage == "validate":
-            if os.path.isdir(tokenized_path):
+            if self.hparams.use_cache and os.path.isdir(tokenized_path):
                 dataset_full = load_from_disk(tokenized_path)
             else:
                 dataset_full = (
@@ -74,49 +75,63 @@ class WordDataModule(BaseDataModule):
             # ).sort_index()[1:]
 
         if stage is None or stage == "predict":
-            if os.path.isdir(tokenized_path):
-                self.pred_dataset = load_from_disk(tokenized_path)
+            if self.hparams.use_cache and os.path.isdir(tokenized_path):
+                self.dataset_full = load_from_disk(tokenized_path)
             else:
                 # Needed for writing to the predictions file
-                self.pred_dataset = load_dataset(
+                self.dataset_full = load_dataset(
                     "csv",
                     data_files=os.path.join(dataset_path, "combined.csv"),
                     split="train",
                 ).map(
-                    self.tokenize,
+                    self.pred_tokenize,
                     batched=True,
                     batch_size=1024,
                     num_proc=self.num_workers,
-                    remove_columns=["text"],
                 )
 
-                self.pred_dataset.save_to_disk(tokenized_path)
+                self.dataset_full.save_to_disk(tokenized_path)
+
+            self.pred_dataset = self.dataset_full.remove_columns("text")
+
+    def pred_tokenize(self, examples: dict):
+        tokenized_inputs = self.tokenizer(examples["text"], truncation=True)
+        return tokenized_inputs
 
     @staticmethod
     def align_labels_with_tokens(
         labels: Sequence[int], word_ids: Iterator[Optional[int]]
     ):
+        """
+        Adding the special tokens [CLS] and [SEP] and subword tokenization creates
+            a mismatch between the input and labels.
+        A single word corresponding to a single label may be split into two subwords.
+
+        You will need to realign the tokens and labels by:
+        1. Mapping all tokens to their corresponding word with the `word_ids` method.
+        2. Assigning the label -100 to the special tokens `[CLS]` and `[SEP]`
+            so the PyTorch loss function ignores them.
+        3. Only labeling the first token of a given word.
+            Assign `-100` to other subtokens from the same word.
+        """
         new_labels = []
-        current_word = None
         for word_id in word_ids:
             if word_id is None:
                 # Special token
                 label = -100
             else:
                 label = labels[word_id]
-                if word_id != current_word:
-                    # Start of a new word!
-                    current_word = word_id
-
                 # Same word as previous token
                 # If the label is B-XXX we change it to I-XXX
-                elif label % 2 == 1:
+                if label % 2 == 1:
                     label += 1
             new_labels.append(label)
 
         return new_labels
 
     def tokenize_and_align_labels(self, examples: dict):
+        # Since the input has already been split into words,
+        # set is_split_into_words=True to tokenize the words into subwords
         tokenized_inputs = self.tokenizer(
             examples["tokens"], truncation=True, is_split_into_words=True
         )
