@@ -135,12 +135,12 @@ if __name__ == "__main__":
         muril_normalize,
     )
 
-    predictions_df["aspect_anno"] = overall_spans
+    predictions_df["aspects_anno"] = overall_spans
 
     if not args.include_splitted_aspects:
         print("\nRemoving splitted texts and aspects columns\n")
-        predictions_df = predictions_df.drop(
-            columns=[args.splitted_texts_colname, args.aspects_colname]
+        predictions_df.drop(
+            columns=[args.splitted_texts_colname, args.aspects_colname], inplace=True
         )
 
     base_dir, filename = os.path.split(args.csv_path)

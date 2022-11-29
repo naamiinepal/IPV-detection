@@ -21,6 +21,10 @@ sent_df["text"] = sent_df["text"].apply(muril_tokenize_detokenize)
 
 word_df = pd.read_csv(os.path.join(WORD_DIR, PREDICTIONS_FILE))
 
-combined_df = pd.merge(sent_df, word_df, on="text")
+print("Merging dataframes...")
+
+combined_df = pd.merge(sent_df, word_df, on=["text", "user_name", "created_at"])
+
+print("Saving combined dataframe...")
 
 combined_df.to_csv(os.path.join(ROOT_DIR, "word_sent_combined.csv"), index=False)

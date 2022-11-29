@@ -41,9 +41,10 @@ combined_df.drop_duplicates(("text", "created_at"), inplace=True)
 
 
 prediction_texts = pd.read_csv(
-    os.path.join(DATA_DIR, "span_predictions.csv"), usecols=["text", "aspect_anno"]
+    os.path.join(DATA_DIR, "span_predictions.csv"), usecols=["text", "aspects_anno"]
 )
 
+print("Merging with predictions")
 combined_df = pd.merge(prediction_texts, combined_df, on="text")
 
 print("\n\nAfter")
