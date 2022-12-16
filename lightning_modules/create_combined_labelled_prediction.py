@@ -27,7 +27,22 @@ def link_to_username(link: str):
 
 DATA_DIR = "datasets"
 
-sentence_df = pd.read_csv(os.path.join(DATA_DIR, "sentence", "combined_with_dupes.csv"))
+SENT_DATA_DIR = os.path.join(DATA_DIR, "sentence")
+
+usecols = ["source", "text", "abuse", "sexual_content_score"]
+
+kiran_df = pd.read_csv(os.path.join(SENT_DATA_DIR, "Kiran.csv"), usecols=usecols)
+
+kiran_df["annotator"] = "kiran"
+
+sharmila_df = pd.read_csv(os.path.join(SENT_DATA_DIR, "Sharmila.csv"), usecols=usecols)
+
+sharmila_df["annotator"] = "sharmila"
+
+sentence_df = pd.concat((kiran_df, sharmila_df))
+
+# Make simulation_non_ipv and simulation_ipv as simulation
+sentence_df["source"] = sentence_df["source"].apply(lambda x: x.split("_", 1)[0])
 
 # Normalize the texts
 muril_normalize = tokenizer_normalize()
@@ -39,10 +54,10 @@ word_span_df = pd.read_csv(
     usecols=["annotator", "text", "aspect_anno", "date", "link"],
 )
 
+# Use link to get the username
+word_span_df["username"] = word_span_df["link"].apply(link_to_username)
 
 word_span_df["annotator"] = word_span_df["annotator"].apply(expand_annotator)
-
-word_span_df["username"] = word_span_df["link"].apply(link_to_username)
 
 word_span_df.drop(columns=["link"], inplace=True)
 
