@@ -16,14 +16,25 @@ def get_df(annotator: str):
     df = pd.read_csv(
         os.path.join(DATA_DIR, f"{annotator}.csv"), low_memory=False, usecols=USE_COLS
     )
+
+    # Normalize texts
     df["text"] = df["text"].str.strip().str.normalize("NFKC")
+
+    # Make sexual score annotation more uniform
+    is_abuse = df["abuse"].astype(bool)
+    df.loc[~is_abuse, "sexual_content_score"] = pd.NA
+
+    # Clip the annotation between 1 and 10 (inclusive)
+    df.loc[is_abuse, "sexual_content_score"].clip(1, 10, inplace=True)
+
     return df
 
 
 sharmila_df = get_df("Sharmila")
 kiran_df = get_df("Kiran")
 
-combined_df = pd.concat((sharmila_df, kiran_df)).drop_duplicates(ignore_index=True)
+# Keep in this order to compare with the previously generated combined.csv
+combined_df = pd.concat((kiran_df, sharmila_df)).drop_duplicates(ignore_index=True)
 
 y = combined_df["abuse"]
 X = np.zeros_like(y)
