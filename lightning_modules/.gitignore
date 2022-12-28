@@ -209,4 +209,4 @@ wandb
 checkpoints
 *.pt
 *.ckpt
-*_cache/
+*_cache*/
