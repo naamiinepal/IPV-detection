@@ -4,7 +4,7 @@ from typing import Optional
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torchmetrics import Accuracy, F1Score, R2Score, AveragePrecision
+from torchmetrics import Accuracy, AveragePrecision, F1Score, R2Score
 from transformers import AutoModel, BertModel
 
 from constants import MODEL_NAME
