@@ -10,3 +10,5 @@ jsonargparse[signatures]
 omegaconf
 evaluate
 seqeval
+krippendorff
+wandb
