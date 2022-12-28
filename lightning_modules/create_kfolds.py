@@ -36,12 +36,15 @@ kiran_df = get_df("Kiran")
 # Keep in this order to compare with the previously generated combined.csv
 combined_df = pd.concat((kiran_df, sharmila_df)).drop_duplicates(ignore_index=True)
 
+# Cannot pass None type to make a batch of tensors
+combined_df["sexual_content_score"].fillna(0, inplace=True)
+
 y = combined_df["abuse"]
 X = np.zeros_like(y)
 
 skf = StratifiedKFold(n_splits=FOLDS, shuffle=True, random_state=SEED)
 
-FOLD_DIR = os.path.join(DATA_DIR, f"folds_{SEED}")
+FOLD_DIR = os.path.join(DATA_DIR, "folds")
 
 os.makedirs(FOLD_DIR, exist_ok=True)
 
