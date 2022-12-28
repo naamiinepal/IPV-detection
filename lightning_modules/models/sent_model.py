@@ -4,7 +4,7 @@ from typing import Optional
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torchmetrics import Accuracy, F1Score, Precision, R2Score, Recall
+from torchmetrics import Accuracy, F1Score, R2Score, AveragePrecision
 from transformers import AutoModel, BertModel
 
 from constants import MODEL_NAME
@@ -37,16 +37,14 @@ class SentModel(BaseModel):
             nn.Linear(self.model.config.hidden_size, 2, bias=not calc_bias),
         )
 
-        self.train_acc = Accuracy()
-        self.train_f1score = F1Score()
-        self.train_precision = Precision()
-        self.train_recall = Recall()
+        self.train_acc = Accuracy(task="binary")
+        self.train_auc = AveragePrecision(task="binary")
+        self.train_f1score = F1Score(task="binary")
         self.train_r2score = R2Score()
 
-        self.val_acc = Accuracy()
-        self.val_f1score = F1Score()
-        self.val_precision = Precision()
-        self.val_recall = Recall()
+        self.val_acc = Accuracy(task="binary")
+        self.val_auc = AveragePrecision(task="binary")
+        self.val_f1score = F1Score(task="binary")
         self.val_r2score = R2Score()
 
     def setup(self, stage: Optional[str] = None):
@@ -59,8 +57,10 @@ class SentModel(BaseModel):
 
             abuse_initializer = math.log(pos) - math.log(neg)
 
-            score = train_dataset["sexual_content_score"]
-            sexual_initializer = sum(score) / sum(bool(sc) for sc in score)
+            score = tuple(
+                sc for sc in train_dataset["sexual_content_score"] if sc is not None
+            )
+            sexual_initializer = sum(score) / len(score)
 
             # Add bias to the model
             self.classification_head[-1].bias = nn.Parameter(
@@ -91,14 +91,11 @@ class SentModel(BaseModel):
         self.train_acc(abuse_pred, abuse_target)
         self.log("train_acc", self.train_acc)
 
+        self.train_auc(abuse_pred, abuse_target)
+        self.log("train_auc", self.train_auc)
+
         self.train_f1score(abuse_pred, abuse_target)
         self.log("train_f1score", self.train_f1score)
-
-        self.train_precision(abuse_pred, abuse_target)
-        self.log("train_precision", self.train_precision)
-
-        self.train_recall(abuse_pred, abuse_target)
-        self.log("train_recall", self.train_recall)
 
         binary_abuse = abuse_target.bool()  # mask for abuse class
         sexual_target = batch["sexual_content_score"][binary_abuse]
@@ -132,14 +129,11 @@ class SentModel(BaseModel):
         self.val_acc(abuse_pred, abuse_target)
         self.log("val_acc", self.val_acc)
 
+        self.val_auc(abuse_pred, abuse_target)
+        self.log("val_auc", self.val_auc)
+
         self.val_f1score(abuse_pred, abuse_target)
         self.log("val_f1score", self.val_f1score, prog_bar=True)
-
-        self.val_precision(abuse_pred, abuse_target)
-        self.log("val_precision", self.val_precision)
-
-        self.val_recall(abuse_pred, abuse_target)
-        self.log("val_recall", self.val_recall)
 
         binary_abuse = abuse_target.bool()  # mask for abuse class
         sexual_target = batch["sexual_content_score"][binary_abuse]
