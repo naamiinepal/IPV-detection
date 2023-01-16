@@ -1,1 +1,21 @@
-["O", "B-Others", "I-Others", "B-character_assasination", "I-character_assasination", "B-ethnic_violence", "I-ethnic_violence", "B-general_threat", "I-general_threat", "B-physical_threat", "I-physical_threat", "B-profanity", "I-profanity", "B-rape_threat", "I-rape_threat", "B-religion_violence", "I-religion_violence", "B-sexism", "I-sexism"]
+[
+    "O",
+    "B-Others",
+    "I-Others",
+    "B-character_assasination",
+    "I-character_assasination",
+    "B-ethnic_violence",
+    "I-ethnic_violence",
+    "B-general_threat",
+    "I-general_threat",
+    "B-physical_threat",
+    "I-physical_threat",
+    "B-profanity",
+    "I-profanity",
+    "B-rape_threat",
+    "I-rape_threat",
+    "B-religion_violence",
+    "I-religion_violence",
+    "B-sexism",
+    "I-sexism"
+]
