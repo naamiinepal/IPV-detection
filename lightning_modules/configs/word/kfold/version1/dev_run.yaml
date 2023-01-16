@@ -1,0 +1,30 @@
+# pytorch_lightning==1.8.6
+seed_everything: 4242
+trainer:
+  logger: False
+  devices: [0]
+  max_epochs: 60
+  accelerator: gpu
+  log_every_n_steps: 33
+  fast_dev_run: True
+ckpt_path: null
+model:
+  class_path: models.word_model.WordModel
+  init_args:
+    model_name_or_path: ${data.init_args.model_name_or_path}
+    dropout_rate: 0.1
+    learning_rate: 5.0e-05
+    weight_decay: 0.01
+    plateu_factor: 0.2
+    plateu_patience: 4
+    monitor: val_loss
+data:
+  class_path: datamodules.word_datamodule.WordDataModule
+  init_args:
+    dataset_path: datasets/word
+    current_fold: 1
+    model_name_or_path: google/muril-base-cased
+    batch_size: 32
+    max_workers: 4
+    pin_memory: false
+    use_cache: false

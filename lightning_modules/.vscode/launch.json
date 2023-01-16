@@ -20,7 +20,7 @@
             "args": [
                 "fit",
                 "--config",
-                "${workspaceRoot}/configs/word/version1.yaml"
+                "${workspaceRoot}/configs/word/kfold/version2/dev_run.yaml"
             ],
             "console": "integratedTerminal",
             "justMyCode": true

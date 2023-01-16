@@ -5,48 +5,46 @@ trainer:
       - class_path: pytorch_lightning.loggers.WandbLogger
         init_args:
             project: aspect_detection
-            name: sent_muril_bias_plateu_norm_free_lr_4_fold4
+            name: word_muril_bias_adj_fold4
   callbacks:
     - class_path: pytorch_lightning.callbacks.ModelCheckpoint
       init_args:
         save_top_k: 10
         monitor: ${model.init_args.monitor}
         mode: min
-        dirpath: checkpoints/sent_muril_bias_plateu_norm_free_lr_4_fold4
+        dirpath: checkpoints/word_muril_bias_adj_fold4
         save_weights_only: True
-        filename: "{epoch:02d}-{val_loss:.3f}"
+        filename: "{epoch:02d}-{val_loss:.3f}-{overall_f1:.3f}"
     - class_path: pytorch_lightning.callbacks.LearningRateMonitor
     - class_path: pytorch_lightning.callbacks.EarlyStopping
       init_args:
         monitor: ${model.init_args.monitor}
-        patience: 5
+        patience: 10
+        mode: min
         verbose: True
   devices: [1]
   max_epochs: 60
   accelerator: gpu
-  # strategy: ddp_find_unused_parameters_false
   log_every_n_steps: 33
   # fast_dev_run: True
 ckpt_path: null
 model:
-  class_path: models.sent_model.SentModel
+  class_path: models.word_model.WordModel
   init_args:
     model_name_or_path: ${data.init_args.model_name_or_path}
-    dropout_rate: 0.3
-    learning_rate: 4.0e-05
+    dropout_rate: 0.1
+    learning_rate: 5.0e-05
     weight_decay: 0.01
-    sexual_weight: 0.15
-    calc_bias: True
-    plateu_factor: 0.1
-    plateu_patience: 2
+    plateu_factor: 0.2
+    plateu_patience: 4
     monitor: val_loss
+    calc_bias: true
 data:
-  class_path: datamodules.sent_datamodule.SentDataModule
+  class_path: datamodules.word_datamodule.WordDataModule
   init_args:
-    dataset_path: datasets/sentence
-    val_ratio: 0.1
+    dataset_path: datasets/word
     current_fold: 4
     model_name_or_path: google/muril-base-cased
-    batch_size: 64
+    batch_size: 32
     max_workers: 4
-    pin_memory: True
+    pin_memory: true
