@@ -1,4 +1,4 @@
-from typing import Mapping, Optional
+from typing import Mapping
 
 import pytorch_lightning as pl
 import torch
@@ -10,7 +10,6 @@ class BaseModel(pl.LightningModule):
     def __init__(
         self,
         learning_rate: float = 5e-5,
-        warmup_ratio: float = 0.1,
         weight_decay: float = 0.01,
         plateu_factor: float = 0.1,
         plateu_patience: int = 2,
@@ -20,21 +19,6 @@ class BaseModel(pl.LightningModule):
         super().__init__()
 
         self.save_hyperparameters()
-
-    def setup(self, stage: Optional[str] = None):
-        if stage is None or stage == "fit":
-            trainer = self.trainer
-            datamodule = trainer.datamodule
-
-            # Calculate total steps
-            eff_batch_size = datamodule.hparams.batch_size * trainer.num_devices
-            self.total_steps = (
-                len(datamodule.train_dataset) // eff_batch_size
-            ) * trainer.max_epochs
-
-            # Doesn't work for distributed training for now
-            # self.total_steps = self.trainer.estimated_stepping_batches
-            self.warmup_steps = int(self.total_steps * self.hparams.warmup_ratio)
 
     def forward(self, inputs: TensorDict):
         return self.model(**inputs)

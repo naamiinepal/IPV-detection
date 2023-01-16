@@ -1,11 +1,11 @@
 import json
 import os.path
-from typing import Iterator, Optional, Sequence
+from ast import literal_eval
+from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 
 from transformers import DataCollatorForTokenClassification
 
-from constants import MAX_PROC
-from datasets import load_dataset, load_from_disk
+from datasets import load_from_disk
 
 from . import BaseDataModule
 
@@ -16,6 +16,7 @@ class WordDataModule(BaseDataModule):
         dataset_path: str,
         val_ratio: float = 0.1,
         use_cache: bool = True,
+        current_fold: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -30,10 +31,10 @@ class WordDataModule(BaseDataModule):
             self.label_names = json.load(f)
 
     def setup(self, stage: Optional[str] = None):
-        dataset_path = self.hparams.dataset_path
-        tokenized_path = os.path.join(
-            f"{dataset_path}_word_cache",
-            self.hparams.model_name_or_path.replace("/", "_"),
+        tokenized_path = self.get_tokenized_path("word")
+
+        kfold_dir = os.path.join(
+            self.hparams.dataset_path, "folds", str(self.hparams.current_fold)
         )
 
         if stage is None or stage == "fit" or stage == "validate":
@@ -41,25 +42,17 @@ class WordDataModule(BaseDataModule):
                 dataset_full = load_from_disk(tokenized_path)
             else:
                 dataset_full = (
-                    load_dataset(
-                        "csv",
-                        data_files=os.path.join(dataset_path, "combined.csv"),
-                        split="train",
-                    )
-                    .train_test_split(test_size=self.hparams.val_ratio)
+                    self.get_raw_dataset_full(kfold_dir)
                     .map(
-                        lambda row: {
-                            "ac": eval(row["ac"]),
-                            "tokens": eval(row["tokens"]),
-                        },
-                        num_proc=MAX_PROC,
+                        self.eval_ac_tokens,
+                        num_proc=self.num_workers,
                     )
                     .map(
                         self.tokenize_and_align_labels,
                         batched=True,
                         batch_size=1024,
                         remove_columns=["ac", "tokens"],
-                        num_proc=MAX_PROC,
+                        num_proc=self.num_workers,
                     )
                 )
 
@@ -75,32 +68,11 @@ class WordDataModule(BaseDataModule):
             # ).sort_index()[1:]
 
         if stage is None or stage == "predict":
-            if self.hparams.use_cache and os.path.isdir(tokenized_path):
-                self.dataset_full = load_from_disk(tokenized_path)
-            else:
-                # Needed for writing to the predictions file
-                self.dataset_full = load_dataset(
-                    "csv",
-                    data_files=os.path.join(dataset_path, "combined.csv"),
-                    split="train",
-                ).map(
-                    self.pred_tokenize,
-                    batched=True,
-                    batch_size=1024,
-                    num_proc=self.num_workers,
-                )
-
-                self.dataset_full.save_to_disk(tokenized_path)
-
-            self.pred_dataset = self.dataset_full.remove_columns("text")
-
-    def pred_tokenize(self, examples: dict):
-        tokenized_inputs = self.tokenizer(examples["text"], truncation=True)
-        return tokenized_inputs
+            self.assign_pred_dataset(tokenized_path, kfold_dir)
 
     @staticmethod
     def align_labels_with_tokens(
-        labels: Sequence[int], word_ids: Iterator[Optional[int]]
+        labels: Sequence[int], word_ids: Iterable[Optional[int]]
     ):
         """
         Adding the special tokens [CLS] and [SEP] and subword tokenization creates
@@ -115,27 +87,35 @@ class WordDataModule(BaseDataModule):
             Assign `-100` to other subtokens from the same word.
         """
         new_labels = []
+        current_word = None
         for word_id in word_ids:
             if word_id is None:
                 # Special token
                 label = -100
             else:
                 label = labels[word_id]
-                # Same word as previous token
-                # If the label is B-XXX we change it to I-XXX
-                if label % 2 == 1:
+                if word_id != current_word:
+                    # Start of a new word!
+                    current_word = word_id
+                elif label % 2 == 1:
+                    # Same word as previous token and
+                    #   if the label is B-XXX we change it to I-XXX
                     label += 1
+
             new_labels.append(label)
 
         return new_labels
 
-    def tokenize_and_align_labels(self, examples: dict):
+    def tokenize_and_align_labels(self, examples: Mapping[str, Any]):
         # Since the input has already been split into words,
         # set is_split_into_words=True to tokenize the words into subwords
         tokenized_inputs = self.tokenizer(
             examples["tokens"], truncation=True, is_split_into_words=True
         )
         all_labels = examples["ac"]
+
+        # Index of every token from the original texts
+        # Example: [None, 0, 1, 2, 3, 4, 5, 6, 7, 7, 8, None]
         all_word_ids = map(tokenized_inputs.word_ids, range(len(all_labels)))
 
         new_labels = [
@@ -145,3 +125,10 @@ class WordDataModule(BaseDataModule):
 
         tokenized_inputs["labels"] = new_labels
         return tokenized_inputs
+
+    @staticmethod
+    def eval_ac_tokens(row: Mapping[str, Any]) -> Mapping[str, Union[list, tuple]]:
+        return {
+            "ac": literal_eval(row["ac"]),
+            "tokens": literal_eval(row["tokens"]),
+        }
