@@ -6,8 +6,8 @@ Created on Tue Jan  4 11:46:27 2022
 """
 from functools import reduce
 
+
 class DotDict(dict):
-    
     def __getattr__(self, k):
         try:
             v = self[k]
@@ -18,14 +18,14 @@ class DotDict(dict):
         return v
 
     def __getitem__(self, k):
-        if isinstance(k, str) and '.' in k:
-            k = k.split('.')
+        if isinstance(k, str) and "." in k:
+            k = k.split(".")
         if isinstance(k, (list, tuple)):
             return reduce(lambda d, kk: d[kk], k, self)
         return super().__getitem__(k)
 
     def get(self, k, default=None):
-        if isinstance(k, str) and '.' in k:
+        if isinstance(k, str) and "." in k:
             try:
                 return self[k]
             except KeyError:

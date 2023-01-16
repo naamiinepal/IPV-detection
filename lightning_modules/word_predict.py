@@ -5,7 +5,6 @@ from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 
 import pandas as pd
 import pytorch_lightning as pl
-
 from datamodules.word_datamodule import WordDataModule
 from models.word_model import WordModel
 

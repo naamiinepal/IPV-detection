@@ -1,9 +1,8 @@
 import os.path
 from typing import Optional
 
-from transformers import DataCollatorWithPadding
-
 from datasets import load_from_disk
+from transformers import DataCollatorWithPadding
 
 from . import BaseDataModule
 

@@ -3,9 +3,8 @@ import os.path
 from ast import literal_eval
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 
-from transformers import DataCollatorForTokenClassification
-
 from datasets import load_from_disk
+from transformers import DataCollatorForTokenClassification
 
 from . import BaseDataModule
 

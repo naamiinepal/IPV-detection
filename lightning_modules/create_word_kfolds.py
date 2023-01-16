@@ -1,9 +1,8 @@
 import os
 
 import numpy as np
-from sklearn.model_selection import KFold
-
 from preprocess_word import processed_word_df
+from sklearn.model_selection import KFold
 
 DATA_DIR = os.path.join("datasets", "word")
 

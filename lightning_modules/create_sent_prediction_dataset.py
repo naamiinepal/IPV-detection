@@ -4,7 +4,6 @@ import os.path
 from glob import glob
 
 import pandas as pd
-
 from utils import cleaner
 
 DATA_DIR = os.path.join("datasets", "raw")

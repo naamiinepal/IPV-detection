@@ -1,8 +1,8 @@
 #!.venv/bin/python
 
+from datamodules import BaseDataModule
 from pytorch_lightning.cli import LightningCLI
 
-from datamodules import BaseDataModule
 from models import BaseModel
 
 cli = LightningCLI(

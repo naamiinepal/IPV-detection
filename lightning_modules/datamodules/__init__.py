@@ -1,11 +1,10 @@
 import os.path
 
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
-
 from constants import MAX_PROC, MODEL_NAME
 from datasets import DatasetDict, load_dataset, load_from_disk
+from torch.utils.data import DataLoader
+from transformers import AutoTokenizer
 
 
 class BaseDataModule(pl.LightningDataModule):

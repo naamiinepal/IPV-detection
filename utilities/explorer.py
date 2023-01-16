@@ -8,64 +8,87 @@ Description:
     Creates visual plots for the learning curves.
 """
 
-from matplotlib import pyplot as plt
-import pandas as pd
-import numpy as np
-import os
 import argparse
+import os
 from warnings import filterwarnings
-filterwarnings(action = 'ignore')
+
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
+filterwarnings(action="ignore")
 
 # Local Module(s).
 from utils import visualize_learning
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description = "Visualization of Learning curves.")
-    
-    parser.add_argument('-i', '--source', 
-                        type = str, metavar='PATH', default = r'cache_dir/mbert',
-                        help = 'Path to the folder containing cache files.')
-    parser.add_argument('-o', '--target', 
-                        type = str, metavar='PATH', default = r'./images/mbert_trial',
-                        help = 'Path to the folder to store the images.')
-    parser.add_argument('-t', '--plot_bar', action = 'store_true', 
-                        help = 'Whether to display results in a bar chart.')
+    parser = argparse.ArgumentParser(description="Visualization of Learning curves.")
+
+    parser.add_argument(
+        "-i",
+        "--source",
+        type=str,
+        metavar="PATH",
+        default=r"cache_dir/mbert",
+        help="Path to the folder containing cache files.",
+    )
+    parser.add_argument(
+        "-o",
+        "--target",
+        type=str,
+        metavar="PATH",
+        default=r"./images/mbert_trial",
+        help="Path to the folder to store the images.",
+    )
+    parser.add_argument(
+        "-t",
+        "--plot_bar",
+        action="store_true",
+        help="Whether to display results in a bar chart.",
+    )
     args = parser.parse_args()
     return args
 
+
 def main(args):
-    '''
+    """
     Plots the learning and the metrics curves for each fold.
     Also, the test results for each folds are displayed in a bar plot (horizontal).
     The aggregated test results are stored in a CSV file in the source directory.
-    
+
     Parameters
     -----------
     source -- Path to the directory containing the cache files. This includes the loss/metrics value as well as test results.
     target -- Path to the directory to store the PNG files of the plots. If the directory doesn't exist, a new one with the same name will be created.
-    '''
-    
+    """
 
     target = args.target
     source = args.source
 
-    os.makedirs(target, exist_ok = True)
+    os.makedirs(target, exist_ok=True)
 
     # Accumulate every filename that starts with 'cache'.
-    filenames = [os.path.join(source, file) for file in os.listdir(source) if file.startswith('cache')]
+    filenames = [
+        os.path.join(source, file)
+        for file in os.listdir(source)
+        if file.startswith("cache")
+    ]
 
     # Each result of the run is stored in a dictionary. Call cache_df_dict['fold3'], for example.
-    cache_df_dict = {'fold' + str(filename[-5]) : pd.read_csv(filename) for filename in filenames}
+    cache_df_dict = {
+        "fold" + str(filename[-5]): pd.read_csv(filename) for filename in filenames
+    }
 
-    plt.style.use('ggplot')
-    
+    plt.style.use("ggplot")
+
     # Plot the learning curves for each fold and save it in the target directory.
     for ii in range(1, len(cache_df_dict) + 1):
-        fold = 'fold' + str(ii)
+        fold = "fold" + str(ii)
         df = cache_df_dict[fold]
-        df.drop(df[df['training loss'] < 1e-6].index, inplace = True)
-        visualize_learning(df, save_loc = target, suffix = fold)
-    
+        df.drop(df[df["training loss"] < 1e-6].index, inplace=True)
+        visualize_learning(df, save_loc=target, suffix=fold)
+
     """ if args.plot_test:
         # Test results.
         # Test filenames.
@@ -115,12 +138,8 @@ def main(args):
         df = df.round(3)
         df.index = ['Fold ' + str(ii + 1) for ii in range(len(df) - 1)] + ['Average']
         df.to_csv(os.path.join(source, 'Aggregated Test Results.csv')) """
-    
-    
-    
 
-    
-    
+
 # Driver code.
 if __name__ == "__main__":
     # Parse the arguments.

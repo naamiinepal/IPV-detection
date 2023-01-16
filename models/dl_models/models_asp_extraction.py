@@ -10,17 +10,19 @@ Description:
 
 import torch
 import torch.nn as nn
+from gensim.models import KeyedVectors as KV
 from torch import FloatTensor
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from gensim.models import KeyedVectors as KV
+
 
 def log_sum_exp(x):
-    """calculate log(sum(exp(x))) = max(x) + log(sum(exp(x - max(x))))
-    """
+    """calculate log(sum(exp(x))) = max(x) + log(sum(exp(x - max(x))))"""
     max_score = x.max(-1)[0]
     return max_score + (x - max_score.unsqueeze(-1)).exp().sum(-1).log()
 
+
 IMPOSSIBLE = -1e4
+
 
 class CRF(nn.Module):
     """General CRF module.
@@ -40,7 +42,9 @@ class CRF(nn.Module):
         self.fc = nn.Linear(in_features, self.num_tags)
 
         # transition factor, Tij mean transition from j to i
-        self.transitions = nn.Parameter(torch.randn(self.num_tags, self.num_tags), requires_grad=True)
+        self.transitions = nn.Parameter(
+            torch.randn(self.num_tags, self.num_tags), requires_grad=True
+        )
         self.transitions.data[self.start_idx, :] = IMPOSSIBLE
         self.transitions.data[:, self.stop_idx] = IMPOSSIBLE
 
@@ -54,7 +58,7 @@ class CRF(nn.Module):
             best_paths: [B, L]
         """
         features = self.fc(features)
-        return self.__viterbi_decode(features, masks[:, :features.size(1)].float())
+        return self.__viterbi_decode(features, masks[:, : features.size(1)].float())
 
     def loss(self, features, ys, masks):
         """negative log likelihood loss
@@ -89,12 +93,16 @@ class CRF(nn.Module):
         emit_scores = features.gather(dim=2, index=tags.unsqueeze(-1)).squeeze(-1)
 
         # transition score
-        start_tag = torch.full((B, 1), self.start_idx, dtype=torch.long, device=tags.device)
+        start_tag = torch.full(
+            (B, 1), self.start_idx, dtype=torch.long, device=tags.device
+        )
         tags = torch.cat([start_tag, tags], dim=1)  # [B, L+1]
         trans_scores = self.transitions[tags[:, 1:], tags[:, :-1]]
 
         # last transition score to STOP tag
-        last_tag = tags.gather(dim=1, index=masks.sum(1).long().unsqueeze(1)).squeeze(1)  # [B]
+        last_tag = tags.gather(dim=1, index=masks.sum(1).long().unsqueeze(1)).squeeze(
+            1
+        )  # [B]
         last_score = self.transitions[self.stop_idx, last_tag]
 
         score = ((trans_scores + emit_scores) * masks).sum(1) + last_score
@@ -111,7 +119,9 @@ class CRF(nn.Module):
         """
         B, L, C = features.shape
 
-        bps = torch.zeros(B, L, C, dtype=torch.long, device=features.device)  # back pointers
+        bps = torch.zeros(
+            B, L, C, dtype=torch.long, device=features.device
+        )  # back pointers
 
         # Initialize the viterbi variables in log space
         max_score = torch.full((B, C), IMPOSSIBLE, device=features.device)  # [B, C]
@@ -125,7 +135,9 @@ class CRF(nn.Module):
             acc_score_t = max_score.unsqueeze(1) + self.transitions  # [B, C, C]
             acc_score_t, bps[:, t, :] = acc_score_t.max(dim=-1)
             acc_score_t += emit_score_t
-            max_score = acc_score_t * mask_t + max_score * (1 - mask_t)  # max_score or acc_score_t
+            max_score = acc_score_t * mask_t + max_score * (
+                1 - mask_t
+            )  # max_score or acc_score_t
 
         # Transition to STOP_TAG
         max_score += self.transitions[self.stop_idx]
@@ -158,13 +170,15 @@ class CRF(nn.Module):
         B, L, C = features.shape
 
         scores = torch.full((B, C), IMPOSSIBLE, device=features.device)  # [B, C]
-        scores[:, self.start_idx] = 0.
+        scores[:, self.start_idx] = 0.0
         trans = self.transitions.unsqueeze(0)  # [1, C, C]
 
         # Iterate through the sentence
         for t in range(L):
             emit_score_t = features[:, t].unsqueeze(2)  # [B, C, 1]
-            score_t = scores.unsqueeze(1) + trans + emit_score_t  # [B, 1, C] + [1, C, C] + [B, C, 1] => [B, C, C]
+            score_t = (
+                scores.unsqueeze(1) + trans + emit_score_t
+            )  # [B, 1, C] + [1, C, C] + [B, C, 1] => [B, C, C]
             score_t = log_sum_exp(score_t)  # [B, C]
 
             mask_t = masks[:, t].unsqueeze(1)  # [B, 1]
@@ -172,18 +186,21 @@ class CRF(nn.Module):
         scores = log_sum_exp(scores + self.transitions[self.stop_idx])
         return scores
 
+
 class BiRnnCrf(nn.Module):
-    def __init__(self, 
-                 vocab_size, 
-                 tagset_size, 
-                 embedding_weights_path, 
-                 from_pretrained,
-                 embedding_dim, 
-                 hidden_dim, 
-                 num_rnn_layers, 
-                 rnn="lstm", 
-                 dropout_rate = 0.5):
-        
+    def __init__(
+        self,
+        vocab_size,
+        tagset_size,
+        embedding_weights_path,
+        from_pretrained,
+        embedding_dim,
+        hidden_dim,
+        num_rnn_layers,
+        rnn="lstm",
+        dropout_rate=0.5,
+    ):
+
         super(BiRnnCrf, self).__init__()
         self.embedding_dim = embedding_dim
         self.embedding_weights_path = embedding_weights_path
@@ -191,28 +208,32 @@ class BiRnnCrf(nn.Module):
         self.vocab_size = vocab_size
         self.tagset_size = tagset_size
         self.from_pretrained = from_pretrained
-        
+
         if self.from_pretrained:
-            
+
             # Load Embedding weights.
-            emb_weights = KV.load_word2vec_format(self.embedding_weights_path,
-                                                  binary=False)
+            emb_weights = KV.load_word2vec_format(
+                self.embedding_weights_path, binary=False
+            )
             emb_weights = FloatTensor(emb_weights.vectors)
             self.embedding = nn.Embedding.from_pretrained(emb_weights)
-            
+
             # Verbosity.
             print(f"\nWeights loaded from '{self.embedding_weights_path}'.")
-            
+
         else:
             self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
 
         RNN = nn.LSTM if rnn == "lstm" else nn.GRU
-        self.rnn = RNN(embedding_dim, hidden_dim // 2, 
-                       num_layers = num_rnn_layers,
-                       bidirectional = True,
-                       dropout = dropout_rate,
-                       batch_first = True)
-        
+        self.rnn = RNN(
+            embedding_dim,
+            hidden_dim // 2,
+            num_layers=num_rnn_layers,
+            bidirectional=True,
+            dropout=dropout_rate,
+            batch_first=True,
+        )
+
         self.crf = CRF(hidden_dim, self.tagset_size)
 
     def __build_features(self, sentences):
@@ -223,7 +244,9 @@ class BiRnnCrf(nn.Module):
         sorted_seq_length, perm_idx = seq_length.sort(descending=True)
         embeds = embeds[perm_idx, :]
 
-        pack_sequence = pack_padded_sequence(embeds, lengths=sorted_seq_length, batch_first=True)
+        pack_sequence = pack_padded_sequence(
+            embeds, lengths=sorted_seq_length, batch_first=True
+        )
         packed_output, _ = self.rnn(pack_sequence)
         lstm_out, _ = pad_packed_sequence(packed_output, batch_first=True)
         _, unperm_idx = perm_idx.sort()
@@ -239,8 +262,8 @@ class BiRnnCrf(nn.Module):
     def forward(self, xs):
         # Get the emission scores from the BiLSTM
         features, masks = self.__build_features(xs)
-        
+
         # Get the final scores plus the tag sequence using viterbi decoder.
         scores, tag_seq = self.crf(features, masks)
-        
+
         return scores, tag_seq, masks

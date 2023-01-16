@@ -5,10 +5,9 @@ import evaluate
 import numpy as np
 import pandas as pd
 import torch
+from constants import MODEL_NAME
 from transformers import AutoModelForTokenClassification, BertForTokenClassification
 from transformers.modeling_outputs import TokenClassifierOutput
-
-from constants import MODEL_NAME
 
 from . import BaseModel, TensorDict
 

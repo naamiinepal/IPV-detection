@@ -3,11 +3,10 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import nn
-from transformers import AutoModel
-
 from constants import MODEL_NAME
 from datasets import load_metric
+from torch import nn
+from transformers import AutoModel
 
 from .word_model import WordModel
 

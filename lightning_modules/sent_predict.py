@@ -6,10 +6,9 @@ from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 import numpy as np
 import pandas as pd
 import torch
-from tqdm import tqdm
-
 from datamodules.sent_datamodule import SentDataModule
 from models.sent_model import SentModel
+from tqdm import tqdm
 
 
 def main(args: Namespace):
